@@ -45,6 +45,8 @@ public:
     auto GetErrors() const { return mErrorMarkers; }
     void RegisterError(AnimateError err, const ContToken* token, unsigned curr_pt,
         SYMBOL_TYPE contsymbol);
+    void RegisterError(AnimateError err, int line, int col, unsigned curr_pt,
+        SYMBOL_TYPE contsymbol);
 
 private:
     std::map<AnimateError, ErrorMarker> mErrorMarkers;

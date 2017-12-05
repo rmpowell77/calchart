@@ -80,12 +80,19 @@ private:
     unsigned numbeats;
 };
 
+struct ParseError : public std::runtime_error
+{
+    ParseError(int l, int c) : std::runtime_error("ParseError"), line(l), column(c) {}
+    int line, column;
+};
+
+// this could throw
+std::list<std::unique_ptr<ContProcedure> > ParseContinuity(std::string const& continuity);
+
 class Animation {
 public:
     Animation(const CC_show& show, NotifyStatus notifyStatus, NotifyErrorList notifyErrorList);
     ~Animation();
-
-    static std::list<std::unique_ptr<ContProcedure> > ParseContinuity(std::string const& continuity, AnimationErrors& errors, SYMBOL_TYPE current_symbol);
 
     // Returns true if changes made
     void GotoSheet(unsigned i);

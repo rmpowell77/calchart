@@ -70,14 +70,13 @@ AnimateDir AnimGetDirFromAngle(float ang)
 }
 
 std::list<std::unique_ptr<ContProcedure> >
-Animation::ParseContinuity(std::string const& continuity, AnimationErrors& errors, SYMBOL_TYPE current_symbol)
+ParseContinuity(std::string const& continuity)
 {
     yyinputbuffer = continuity.c_str();
     // parse out the error
     if (parsecontinuity() != 0) {
-        // Supply a generic parse error
         ContToken dummy;
-        errors.RegisterError(ANIMERR_SYNTAX, &dummy, 0, current_symbol);
+        throw ParseError(dummy.line, dummy.col);
     }
     return std::move(ParsedContinuity);
 }
@@ -105,7 +104,14 @@ Animation::Animation(const CC_show& show, NotifyStatus notifyStatus, NotifyError
         for (auto& current_symbol : k_symbols) {
             if (curr_sheet->ContinuityInUse(current_symbol)) {
                 auto& current_continuity = curr_sheet->GetContinuityBySymbol(current_symbol);
-                auto continuity = ParseContinuity(current_continuity.GetText(), errors, current_symbol);
+                std::list<std::unique_ptr<ContProcedure>> continuity;
+                try {
+                    continuity = ParseContinuity(current_continuity.GetText());
+                }
+                catch (ParseError const& e) {
+                    // Supply a generic parse error
+                    errors.RegisterError(ANIMERR_SYNTAX, e.line, e.column, 0, current_symbol);
+                }
                 if (notifyStatus) {
                     std::string message("Compiling \"");
                     message += curr_sheet->GetName().substr(0, 32);

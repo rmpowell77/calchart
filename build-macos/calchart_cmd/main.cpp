@@ -83,7 +83,14 @@ void DumpContinuity(const char* show)
                 std::cout << "<--EndText sheet num " << sheet_num << ": symbol " << GetNameForSymbol(symbol) << "-->\n";
 
                 AnimationErrors e;
-                auto continuity = Animation::ParseContinuity(cont.GetText(), e, symbol);
+                std::list<std::unique_ptr<ContProcedure>> continuity;
+                try {
+                    continuity = ParseContinuity(cont.GetText());
+                }
+                catch (ParseError const& error) {
+                    // Supply a generic parse error
+                    e.RegisterError(ANIMERR_SYNTAX, error.line, error.column, 0, symbol);
+                }
 				std::cout << "<--Errors during compile-->\n";
                 if (e.AnyErrors()) {
 					for (auto&& i : e.GetErrors())
@@ -105,7 +112,14 @@ void DumpContinuity(const char* show)
 void DumpContinuityText(std::string const& text)
 {
 	AnimationErrors e;
-	auto continuity = Animation::ParseContinuity(text, e, SYMBOL_PLAIN);
+    std::list<std::unique_ptr<ContProcedure>> continuity;
+    try {
+        continuity = ParseContinuity(text);
+    }
+    catch (ParseError const& error) {
+        // Supply a generic parse error
+        e.RegisterError(ANIMERR_SYNTAX, error.line, error.column, 0, SYMBOL_PLAIN);
+    }
 	if (e.AnyErrors()) {
 		std::cout << "Errors during compile\n";
 	}
@@ -163,7 +177,14 @@ void DoContinuityUnitTest(const char* test_cases)
 		}
 
 		AnimationErrors e;
-		auto continuity = Animation::ParseContinuity(text, e, SYMBOL_PLAIN);
+        std::list<std::unique_ptr<ContProcedure>> continuity;
+        try {
+            continuity = ParseContinuity(text);
+        }
+        catch (ParseError const& error) {
+            // Supply a generic parse error
+            e.RegisterError(ANIMERR_SYNTAX, error.line, error.column, 0, SYMBOL_PLAIN);
+        }
 		std::stringstream parsed_continuity;
 		for (auto& proc : continuity) {
 			parsed_continuity << *proc << "\n";

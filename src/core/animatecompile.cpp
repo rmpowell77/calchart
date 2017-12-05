@@ -36,6 +36,15 @@ void AnimationErrors::RegisterError(AnimateError err, const ContToken* token,
     mErrorMarkers[err].pntgroup.insert(curr_pt);
 }
 
+void AnimationErrors::RegisterError(AnimateError err, int line, int col,
+    unsigned curr_pt, SYMBOL_TYPE contsymbol)
+{
+    mErrorMarkers[err].contsymbol = contsymbol;
+    mErrorMarkers[err].line = line;
+    mErrorMarkers[err].col = col;
+    mErrorMarkers[err].pntgroup.insert(curr_pt);
+}
+
 AnimateCompile::AnimateCompile(const CC_show& show, SYMBOL_TYPE cont_symbol, unsigned pt_num, CC_show::const_CC_sheet_iterator_t c_sheet, AnimateState& state)
     : mShow(show)
     , contsymbol(cont_symbol)
