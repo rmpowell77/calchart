@@ -23,22 +23,42 @@
 #pragma once
 
 #include <string>
+#include <list>
 
-// points have a symbol index and a continuity index.  The continuity
-// numbers is the way that the points know what continity they use.
-// This allows multiple points to have different symbols but the same
-// continuity.
+class ContProcedure;
+class ContinuityEditor;
+
+struct ParseError : public std::runtime_error
+{
+    ParseError(int l, int c) : std::runtime_error("ParseError"), line(l), column(c) {}
+    int line, column;
+};
+
 class CC_continuity {
 public:
-    CC_continuity();
+    CC_continuity(std::string const& s = "");
     ~CC_continuity();
 
-    void SetText(const std::string& s);
-    void AppendText(const std::string& s);
-    const std::string& GetText() const;
+//    CC_continuity(CC_continuity const&);
+//    CC_continuity& operator=(CC_continuity const&);
+//    CC_continuity(CC_continuity&&);
+//    CC_continuity& operator=(CC_continuity&&);
+
+// this could throw
+    std::vector<std::unique_ptr<ContProcedure> > GetParsedContinuity() const;
 
 private:
+    const std::string& GetText() const;
+
     std::string text;
+//    std::list<std::unique_ptr<ContProcedure> > m_parsedContinuity;
+
+    friend ContinuityEditor;
+    friend class AnimationFrame;
+    friend class CC_sheet;
+    friend class CC_show;
+    friend void DumpContinuity(const char* show);
+
 
     friend bool Check_CC_continuity(const CC_continuity&,
         const struct CC_continuity_values&);

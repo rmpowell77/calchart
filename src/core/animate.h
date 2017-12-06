@@ -80,14 +80,6 @@ private:
     unsigned numbeats;
 };
 
-struct ParseError : public std::runtime_error
-{
-    ParseError(int l, int c) : std::runtime_error("ParseError"), line(l), column(c) {}
-    int line, column;
-};
-
-// this could throw
-std::list<std::unique_ptr<ContProcedure> > ParseContinuity(std::string const& continuity);
 
 class Animation {
 public:

@@ -280,7 +280,7 @@ CC_sheet::CC_sheet(size_t numPoints, std::istream& stream,
             }
         }
         std::string textstr(text);
-        GetContinuityBySymbol(symbol_index).SetText(textstr);
+        GetContinuityBySymbol(symbol_index) = CC_continuity{textstr};
 
         name = ReadLong(stream);
     }
@@ -340,7 +340,7 @@ CC_sheet::CC_sheet(size_t numPoints, const uint8_t* ptr, size_t size,
             throw CC_FileException("No viable symbol for name", INGL_ECNT);
         }
         std::string textstr(text);
-        sheet->GetContinuityBySymbol(symbol_index).SetText(textstr);
+        sheet->GetContinuityBySymbol(symbol_index) = CC_continuity{textstr};
     };
     auto parse_INGL_CONT = [parse_INGL_ECNT](CC_sheet* sheet, const uint8_t* ptr,
         size_t size) {
@@ -563,7 +563,7 @@ CC_continuity& CC_sheet::GetContinuityBySymbol(SYMBOL_TYPE i)
 
 void CC_sheet::SetContinuityText(SYMBOL_TYPE which, const std::string& text)
 {
-    GetContinuityBySymbol(which).SetText(text);
+    GetContinuityBySymbol(which) = CC_continuity{text};
 }
 
 bool CC_sheet::ContinuityInUse(SYMBOL_TYPE idx) const
@@ -776,7 +776,7 @@ void CC_sheet::CC_sheet_round_trip_test()
         blank_sheet.SetPosition(CC_coord(30, 40), 0, 2);
         blank_sheet.SetPosition(CC_coord(52, 50), 0, 3);
         blank_sheet.SetBeats(13);
-        blank_sheet.GetContinuityBySymbol(SYMBOL_PLAIN).SetText("continuity test");
+        blank_sheet.GetContinuityBySymbol(SYMBOL_PLAIN) = CC_continuity{"continuity test"};
         blank_sheet.mPrintableContinuity = CC_print_continuity{
             "number 1", "duuuude, writing this testing is boring"
         };

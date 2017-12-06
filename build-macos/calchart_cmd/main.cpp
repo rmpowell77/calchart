@@ -85,7 +85,7 @@ void DumpContinuity(const char* show)
                 AnimationErrors e;
                 std::list<std::unique_ptr<ContProcedure>> continuity;
                 try {
-                    continuity = ParseContinuity(cont.GetText());
+                    continuity = cont.GetParsedContinuity();
                 }
                 catch (ParseError const& error) {
                     // Supply a generic parse error

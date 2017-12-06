@@ -38,7 +38,7 @@
 
 extern int parsecontinuity();
 extern const char* yyinputbuffer;
-extern std::list<std::unique_ptr<ContProcedure> > ParsedContinuity;
+extern std::vector<std::unique_ptr<ContProcedure> > ParsedContinuity;
 
 AnimateDir AnimGetDirFromAngle(float ang)
 {
@@ -69,18 +69,6 @@ AnimateDir AnimGetDirFromAngle(float ang)
     return ANIMDIR_N;
 }
 
-std::list<std::unique_ptr<ContProcedure> >
-ParseContinuity(std::string const& continuity)
-{
-    yyinputbuffer = continuity.c_str();
-    // parse out the error
-    if (parsecontinuity() != 0) {
-        ContToken dummy;
-        throw ParseError(dummy.line, dummy.col);
-    }
-    return std::move(ParsedContinuity);
-}
-
 Animation::Animation(const CC_show& show, NotifyStatus notifyStatus, NotifyErrorList notifyErrorList)
     : pts(show.GetNumPoints())
     , curr_cmds(pts.size())
@@ -104,9 +92,9 @@ Animation::Animation(const CC_show& show, NotifyStatus notifyStatus, NotifyError
         for (auto& current_symbol : k_symbols) {
             if (curr_sheet->ContinuityInUse(current_symbol)) {
                 auto& current_continuity = curr_sheet->GetContinuityBySymbol(current_symbol);
-                std::list<std::unique_ptr<ContProcedure>> continuity;
+                std::vector<std::unique_ptr<ContProcedure>> continuity;
                 try {
-                    continuity = ParseContinuity(current_continuity.GetText());
+                    continuity = current_continuity.GetParsedContinuity();
                 }
                 catch (ParseError const& e) {
                     // Supply a generic parse error

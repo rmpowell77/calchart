@@ -67,7 +67,7 @@ public:
     Compile(const CC_show& show, AnimationVariables variablesStates,
         AnimationErrors errors, CC_show::const_CC_sheet_iterator_t c_sheet,
         unsigned pt_num, SYMBOL_TYPE cont_symbol,
-        std::list<std::unique_ptr<ContProcedure> > const& proc);
+        std::vector<std::unique_ptr<ContProcedure> > const& proc);
 
 private:
     AnimateCompile(const CC_show& show, SYMBOL_TYPE cont_symbol, unsigned pt_num, CC_show::const_CC_sheet_iterator_t c_sheet, AnimateState& state);
