@@ -23,45 +23,48 @@
 #pragma once
 
 #include <string>
-#include <list>
+#include <vector>
 
 class ContProcedure;
 class ContinuityEditor;
 
 struct ParseError : public std::runtime_error
 {
-    ParseError(int l, int c) : std::runtime_error("ParseError"), line(l), column(c) {}
+    ParseError(std::string const& str, int l, int c)
+        : std::runtime_error(std::string("ParseError of ") + str + " at " + std::to_string(l) + ", " + std::to_string(c))
+        , line(l)
+        , column(c) {}
     int line, column;
 };
 
 class CC_continuity {
 public:
+
+    // this could throw ParseError
     CC_continuity(std::string const& s = "");
     ~CC_continuity();
 
-//    CC_continuity(CC_continuity const&);
-//    CC_continuity& operator=(CC_continuity const&);
-//    CC_continuity(CC_continuity&&);
-//    CC_continuity& operator=(CC_continuity&&);
+    CC_continuity(CC_continuity const&);
+    CC_continuity& operator=(CC_continuity const&);
+    CC_continuity(CC_continuity&&) noexcept;
+    CC_continuity& operator=(CC_continuity&&) noexcept;
 
-// this could throw
-    std::vector<std::unique_ptr<ContProcedure> > GetParsedContinuity() const;
+    friend void swap(CC_continuity& lhs, CC_continuity& rhs)
+    {
+        using std::swap;
+        swap(lhs.text, rhs.text);
+        swap(lhs.m_parsedContinuity, rhs.m_parsedContinuity);
+    }
+
+    auto GetText() const noexcept { return text; }
+
+    std::vector<std::unique_ptr<ContProcedure>> const& GetParsedContinuity() const noexcept { return m_parsedContinuity; }
 
 private:
-    const std::string& GetText() const;
-
     std::string text;
-//    std::list<std::unique_ptr<ContProcedure> > m_parsedContinuity;
+    std::vector<std::unique_ptr<ContProcedure> > m_parsedContinuity;
 
-    friend ContinuityEditor;
-    friend class AnimationFrame;
-    friend class CC_sheet;
-    friend class CC_show;
-    friend void DumpContinuity(const char* show);
-
-
-    friend bool Check_CC_continuity(const CC_continuity&,
-        const struct CC_continuity_values&);
+    friend bool Check_CC_continuity(const CC_continuity&, const struct CC_continuity_values&);
     friend void CC_continuity_UnitTests();
 };
 

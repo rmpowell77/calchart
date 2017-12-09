@@ -92,14 +92,7 @@ Animation::Animation(const CC_show& show, NotifyStatus notifyStatus, NotifyError
         for (auto& current_symbol : k_symbols) {
             if (curr_sheet->ContinuityInUse(current_symbol)) {
                 auto& current_continuity = curr_sheet->GetContinuityBySymbol(current_symbol);
-                std::vector<std::unique_ptr<ContProcedure>> continuity;
-                try {
-                    continuity = current_continuity.GetParsedContinuity();
-                }
-                catch (ParseError const& e) {
-                    // Supply a generic parse error
-                    errors.RegisterError(ANIMERR_SYNTAX, e.line, e.column, 0, current_symbol);
-                }
+                auto&& continuity = current_continuity.GetParsedContinuity();
                 if (notifyStatus) {
                     std::string message("Compiling \"");
                     message += curr_sheet->GetName().substr(0, 32);

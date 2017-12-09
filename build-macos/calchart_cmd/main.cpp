@@ -83,14 +83,7 @@ void DumpContinuity(const char* show)
                 std::cout << "<--EndText sheet num " << sheet_num << ": symbol " << GetNameForSymbol(symbol) << "-->\n";
 
                 AnimationErrors e;
-                std::list<std::unique_ptr<ContProcedure>> continuity;
-                try {
-                    continuity = cont.GetParsedContinuity();
-                }
-                catch (ParseError const& error) {
-                    // Supply a generic parse error
-                    e.RegisterError(ANIMERR_SYNTAX, error.line, error.column, 0, symbol);
-                }
+                auto&& continuity = cont.GetParsedContinuity();
 				std::cout << "<--Errors during compile-->\n";
                 if (e.AnyErrors()) {
 					for (auto&& i : e.GetErrors())
@@ -111,21 +104,20 @@ void DumpContinuity(const char* show)
 
 void DumpContinuityText(std::string const& text)
 {
-	AnimationErrors e;
-    std::list<std::unique_ptr<ContProcedure>> continuity;
     try {
-        continuity = ParseContinuity(text);
+        auto&& continuity = CC_continuity(text);
+        for (auto& proc : continuity.GetParsedContinuity()) {
+            std::cout << *proc << "\n";
+        }
     }
     catch (ParseError const& error) {
+        AnimationErrors e;
         // Supply a generic parse error
         e.RegisterError(ANIMERR_SYNTAX, error.line, error.column, 0, SYMBOL_PLAIN);
+        if (e.AnyErrors()) {
+            std::cout << "Errors during compile: " << error.what() << "\n";
+        }
     }
-	if (e.AnyErrors()) {
-		std::cout << "Errors during compile\n";
-	}
-	for (auto& proc : continuity) {
-		std::cout << *proc << "\n";
-	}
 }
 
 void DoContinuityUnitTest(const char* test_cases)
@@ -176,26 +168,25 @@ void DoContinuityUnitTest(const char* test_cases)
 			getline(input, d);
 		}
 
-		AnimationErrors e;
-        std::list<std::unique_ptr<ContProcedure>> continuity;
+        std::stringstream parsed_continuity;
+        std::stringstream parse_errors;
+        AnimationErrors e;
         try {
-            continuity = ParseContinuity(text);
+            auto&& continuity = CC_continuity(text);
+            for (auto& proc : continuity.GetParsedContinuity()) {
+                parsed_continuity << *proc << "\n";
+            }
         }
         catch (ParseError const& error) {
             // Supply a generic parse error
             e.RegisterError(ANIMERR_SYNTAX, error.line, error.column, 0, SYMBOL_PLAIN);
+            if (e.AnyErrors()) {
+                for (auto&& i : e.GetErrors())
+                {
+                    parse_errors<<"Error at ["<<i.second.line<<","<<i.second.col<<"] of type "<<i.first<<"\n";
+                }
+            }
         }
-		std::stringstream parsed_continuity;
-		for (auto& proc : continuity) {
-			parsed_continuity << *proc << "\n";
-		}
-		std::stringstream parse_errors;
-		if (e.AnyErrors()) {
-			for (auto&& i : e.GetErrors())
-			{
-				parse_errors<<"Error at ["<<i.second.line<<","<<i.second.col<<"] of type "<<i.first<<"\n";
-			}
-		}
 		auto parsed_cont = parsed_continuity.str();
 		if ((e.AnyErrors() && parse_errors.str() != errors) || !std::equal(parsed.begin(), parsed.end(), parsed_cont.begin(), parsed_cont.end())) {
 			std::cout<<"parse failed!\n";

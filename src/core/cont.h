@@ -64,6 +64,7 @@ public:
     ContPoint() {}
     virtual CC_coord Get(AnimateCompile& anim) const;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContPoint> clone() const;
 };
 
 class ContStartPoint : public ContPoint {
@@ -73,6 +74,7 @@ public:
     ContStartPoint() {}
     virtual CC_coord Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContPoint> clone() const override;
 };
 
 class ContNextPoint : public ContPoint {
@@ -82,6 +84,7 @@ public:
     ContNextPoint() {}
     virtual CC_coord Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContPoint> clone() const override;
 };
 
 class ContRefPoint : public ContPoint {
@@ -94,6 +97,7 @@ public:
     }
     virtual CC_coord Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContPoint> clone() const override;
 
 private:
     unsigned refnum;
@@ -106,6 +110,7 @@ public:
     ContValue() {}
     virtual float Get(AnimateCompile& anim) const = 0;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContValue> clone() const = 0;
 };
 
 class ContValueFloat : public ContValue {
@@ -118,6 +123,7 @@ public:
     }
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContValue> clone() const override;
 
 private:
     float val;
@@ -133,6 +139,7 @@ public:
     }
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContValue> clone() const override;
 
 private:
     ContDefinedValue val;
@@ -147,8 +154,14 @@ public:
         , val2(v2)
     {
     }
+    ContValueAdd(std::unique_ptr<ContValue> v1, std::unique_ptr<ContValue> v2)
+        : val1(std::move(v1))
+        , val2(std::move(v2))
+    {
+    }
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContValue> clone() const override;
 
 private:
     std::unique_ptr<ContValue> val1, val2;
@@ -163,8 +176,14 @@ public:
         , val2(v2)
     {
     }
+    ContValueSub(std::unique_ptr<ContValue> v1, std::unique_ptr<ContValue> v2)
+        : val1(std::move(v1))
+        , val2(std::move(v2))
+    {
+    }
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContValue> clone() const override;
 
 private:
     std::unique_ptr<ContValue> val1, val2;
@@ -179,8 +198,14 @@ public:
         , val2(v2)
     {
     }
+    ContValueMult(std::unique_ptr<ContValue> v1, std::unique_ptr<ContValue> v2)
+        : val1(std::move(v1))
+        , val2(std::move(v2))
+    {
+    }
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContValue> clone() const override;
 
 private:
     std::unique_ptr<ContValue> val1, val2;
@@ -195,8 +220,14 @@ public:
         , val2(v2)
     {
     }
+    ContValueDiv(std::unique_ptr<ContValue> v1, std::unique_ptr<ContValue> v2)
+        : val1(std::move(v1))
+        , val2(std::move(v2))
+    {
+    }
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContValue> clone() const override;
 
 private:
     std::unique_ptr<ContValue> val1, val2;
@@ -210,8 +241,13 @@ public:
         : val(v)
     {
     }
+    ContValueNeg(std::unique_ptr<ContValue> v)
+        : val(std::move(v))
+    {
+    }
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContValue> clone() const override;
 
 private:
     std::unique_ptr<ContValue> val;
@@ -223,6 +259,7 @@ class ContValueREM : public ContValue {
 public:
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContValue> clone() const override;
 };
 
 class ContValueVar : public ContValue {
@@ -236,6 +273,7 @@ public:
     virtual float Get(AnimateCompile& anim) const override;
     void Set(AnimateCompile& anim, float v);
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContValue> clone() const override;
 
 private:
     unsigned varnum;
@@ -249,8 +287,13 @@ public:
         : pnt(p)
     {
     }
+    ContFuncDir(std::unique_ptr<ContPoint> p)
+        : pnt(std::move(p))
+    {
+    }
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContValue> clone() const override;
 
 private:
     std::unique_ptr<ContPoint> pnt;
@@ -265,8 +308,14 @@ public:
         , pnt_end(end)
     {
     }
+    ContFuncDirFrom(std::unique_ptr<ContPoint> start, std::unique_ptr<ContPoint> end)
+        : pnt_start(std::move(start))
+        , pnt_end(std::move(end))
+    {
+    }
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContValue> clone() const override;
 
 private:
     std::unique_ptr<ContPoint> pnt_start, pnt_end;
@@ -280,8 +329,13 @@ public:
         : pnt(p)
     {
     }
+    ContFuncDist(std::unique_ptr<ContPoint> p)
+        : pnt(std::move(p))
+    {
+    }
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContValue> clone() const override;
 
 private:
     std::unique_ptr<ContPoint> pnt;
@@ -296,8 +350,14 @@ public:
         , pnt_end(end)
     {
     }
+    ContFuncDistFrom(std::unique_ptr<ContPoint> start, std::unique_ptr<ContPoint> end)
+        : pnt_start(std::move(start))
+        , pnt_end(std::move(end))
+    {
+    }
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContValue> clone() const override;
 
 private:
     std::unique_ptr<ContPoint> pnt_start, pnt_end;
@@ -313,8 +373,15 @@ public:
         , pnt(p)
     {
     }
+    ContFuncEither(std::unique_ptr<ContValue> d1, std::unique_ptr<ContValue> d2, std::unique_ptr<ContPoint> p)
+        : dir1(std::move(d1))
+        , dir2(std::move(d2))
+        , pnt(std::move(p))
+    {
+    }
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContValue> clone() const override;
 
 private:
     std::unique_ptr<ContValue> dir1, dir2;
@@ -329,8 +396,13 @@ public:
         : dir(d)
     {
     }
+    ContFuncOpp(std::unique_ptr<ContValue> d)
+        : dir(std::move(d))
+    {
+    }
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContValue> clone() const override;
 
 private:
     std::unique_ptr<ContValue> dir;
@@ -346,8 +418,15 @@ public:
         , pnt(p)
     {
     }
+    ContFuncStep(std::unique_ptr<ContValue> beats, std::unique_ptr<ContValue> blocksize, std::unique_ptr<ContPoint> p)
+        : numbeats(std::move(beats))
+        , blksize(std::move(blocksize))
+        , pnt(std::move(p))
+    {
+    }
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContValue> clone() const override;
 
 private:
     std::unique_ptr<ContValue> numbeats, blksize;
@@ -361,6 +440,7 @@ public:
     ContProcedure() {}
     virtual void Compile(AnimateCompile& anim) = 0;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContProcedure> clone() const = 0;
 };
 
 class ContProcSet : public ContProcedure {
@@ -372,8 +452,14 @@ public:
         , val(v)
     {
     }
+    ContProcSet(std::unique_ptr<ContValueVar> vr, std::unique_ptr<ContValue> v)
+        : var(std::move(vr))
+        , val(std::move(v))
+    {
+    }
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContProcedure> clone() const override;
 
 private:
     std::unique_ptr<ContValueVar> var;
@@ -386,6 +472,7 @@ class ContProcBlam : public ContProcedure {
 public:
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContProcedure> clone() const override;
 };
 
 class ContProcCM : public ContProcedure {
@@ -402,8 +489,19 @@ public:
         , numbeats(beats)
     {
     }
+    ContProcCM(std::unique_ptr<ContPoint> p1, std::unique_ptr<ContPoint> p2, std::unique_ptr<ContValue> steps, std::unique_ptr<ContValue> d1,
+        std::unique_ptr<ContValue> d2, std::unique_ptr<ContValue> beats)
+        : pnt1(std::move(p1))
+        , pnt2(std::move(p2))
+        , stps(std::move(steps))
+        , dir1(std::move(d1))
+        , dir2(std::move(d2))
+        , numbeats(std::move(beats))
+    {
+    }
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContProcedure> clone() const override;
 
 private:
     std::unique_ptr<ContPoint> pnt1, pnt2;
@@ -420,8 +518,15 @@ public:
         , numbeats(beats)
     {
     }
+    ContProcDMCM(std::unique_ptr<ContPoint> p1, std::unique_ptr<ContPoint> p2, std::unique_ptr<ContValue> beats)
+        : pnt1(std::move(p1))
+        , pnt2(std::move(p2))
+        , numbeats(std::move(beats))
+    {
+    }
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContProcedure> clone() const override;
 
 private:
     std::unique_ptr<ContPoint> pnt1, pnt2;
@@ -436,8 +541,13 @@ public:
         : pnt(p)
     {
     }
+    ContProcDMHS(std::unique_ptr<ContPoint> p)
+        : pnt(std::move(p))
+    {
+    }
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContProcedure> clone() const override;
 
 private:
     std::unique_ptr<ContPoint> pnt;
@@ -452,8 +562,14 @@ public:
         , pnt(p)
     {
     }
+    ContProcEven(std::unique_ptr<ContValue> steps, std::unique_ptr<ContPoint> p)
+        : stps(std::move(steps))
+        , pnt(std::move(p))
+    {
+    }
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContProcedure> clone() const override;
 
 private:
     std::unique_ptr<ContValue> stps;
@@ -468,8 +584,13 @@ public:
         : pnt(p)
     {
     }
+    ContProcEWNS(std::unique_ptr<ContPoint> p)
+        : pnt(std::move(p))
+    {
+    }
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContProcedure> clone() const override;
 
 private:
     std::unique_ptr<ContPoint> pnt;
@@ -488,8 +609,18 @@ public:
         , pnt(p)
     {
     }
+    ContProcFountain(std::unique_ptr<ContValue> d1, std::unique_ptr<ContValue> d2, std::unique_ptr<ContValue> s1, std::unique_ptr<ContValue> s2,
+        std::unique_ptr<ContPoint> p)
+        : dir1(std::move(d1))
+        , dir2(std::move(d2))
+        , stepsize1(std::move(s1))
+        , stepsize2(std::move(s2))
+        , pnt(std::move(p))
+    {
+    }
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContProcedure> clone() const override;
 
 private:
     std::unique_ptr<ContValue> dir1, dir2;
@@ -506,8 +637,14 @@ public:
         , dir(d)
     {
     }
+    ContProcFM(std::unique_ptr<ContValue> steps, std::unique_ptr<ContValue> d)
+        : stps(std::move(steps))
+        , dir(std::move(d))
+    {
+    }
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContProcedure> clone() const override;
 
 private:
     std::unique_ptr<ContValue> stps, dir;
@@ -521,8 +658,13 @@ public:
         : pnt(p)
     {
     }
+    ContProcFMTO(std::unique_ptr<ContPoint> p)
+        : pnt(std::move(p))
+    {
+    }
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContProcedure> clone() const override;
 
 private:
     std::unique_ptr<ContPoint> pnt;
@@ -536,8 +678,13 @@ public:
         : grid(g)
     {
     }
+    ContProcGrid(std::unique_ptr<ContValue> g)
+        : grid(std::move(g))
+    {
+    }
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContProcedure> clone() const override;
 
 private:
     std::unique_ptr<ContValue> grid;
@@ -553,8 +700,15 @@ public:
         , numbeats(beats)
     {
     }
+    ContProcHSCM(std::unique_ptr<ContPoint> p1, std::unique_ptr<ContPoint> p2, std::unique_ptr<ContValue> beats)
+        : pnt1(std::move(p1))
+        , pnt2(std::move(p2))
+        , numbeats(std::move(beats))
+    {
+    }
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContProcedure> clone() const override;
 
 private:
     std::unique_ptr<ContPoint> pnt1, pnt2;
@@ -569,8 +723,13 @@ public:
         : pnt(p)
     {
     }
+    ContProcHSDM(std::unique_ptr<ContPoint> p)
+        : pnt(std::move(p))
+    {
+    }
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContProcedure> clone() const override;
 
 private:
     std::unique_ptr<ContPoint> pnt;
@@ -584,8 +743,13 @@ public:
         : pnt(p)
     {
     }
+    ContProcMagic(std::unique_ptr<ContPoint> p)
+        : pnt(std::move(p))
+    {
+    }
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContProcedure> clone() const override;
 
 private:
     std::unique_ptr<ContPoint> pnt;
@@ -603,8 +767,17 @@ public:
         , facedir(face)
     {
     }
+    ContProcMarch(std::unique_ptr<ContValue> stepsize, std::unique_ptr<ContValue> steps, std::unique_ptr<ContValue> d,
+        std::unique_ptr<ContValue> face)
+        : stpsize(std::move(stepsize))
+        , stps(std::move(steps))
+        , dir(std::move(d))
+        , facedir(std::move(face))
+    {
+    }
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContProcedure> clone() const override;
 
 private:
     std::unique_ptr<ContValue> stpsize, stps, dir, facedir;
@@ -619,8 +792,14 @@ public:
         , dir(d)
     {
     }
+    ContProcMT(std::unique_ptr<ContValue> beats, std::unique_ptr<ContValue> d)
+        : numbeats(std::move(beats))
+        , dir(std::move(d))
+    {
+    }
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContProcedure> clone() const override;
 
 private:
     std::unique_ptr<ContValue> numbeats, dir;
@@ -634,8 +813,13 @@ public:
         : dir(d)
     {
     }
+    ContProcMTRM(std::unique_ptr<ContValue> d)
+        : dir(std::move(d))
+    {
+    }
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContProcedure> clone() const override;
 
 private:
     std::unique_ptr<ContValue> dir;
@@ -649,8 +833,13 @@ public:
         : pnt(p)
     {
     }
+    ContProcNSEW(std::unique_ptr<ContPoint> p)
+        : pnt(std::move(p))
+    {
+    }
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContProcedure> clone() const override;
 
 private:
     std::unique_ptr<ContPoint> pnt;
@@ -666,8 +855,15 @@ public:
         , pnt(p)
     {
     }
+    ContProcRotate(std::unique_ptr<ContValue> angle, std::unique_ptr<ContValue> steps, std::unique_ptr<ContPoint> p)
+        : ang(std::move(angle))
+        , stps(std::move(steps))
+        , pnt(std::move(p))
+    {
+    }
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
+    virtual std::unique_ptr<ContProcedure> clone() const override;
 
 private:
     std::unique_ptr<ContValue> ang, stps;

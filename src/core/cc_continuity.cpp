@@ -24,35 +24,48 @@
 #include "cont.h"
 #include <assert.h>
 
-using std::string;
-
-CC_continuity::CC_continuity(const string& s) : text(s) {}
-
-CC_continuity::~CC_continuity() {}
-
-const string& CC_continuity::GetText() const { return text; }
-
 extern int parsecontinuity();
 extern const char* yyinputbuffer;
 extern std::vector<std::unique_ptr<ContProcedure> > ParsedContinuity;
 
-std::vector<std::unique_ptr<ContProcedure> >
-CC_continuity::GetParsedContinuity() const
+CC_continuity::CC_continuity(std::string const& s) : text(s)
 {
     yyinputbuffer = text.c_str();
     // parse out the error
     if (parsecontinuity() != 0) {
         ContToken dummy;
-        throw ParseError(dummy.line, dummy.col);
+        throw ParseError(s, dummy.line, dummy.col);
     }
-    return std::move(ParsedContinuity);
+    m_parsedContinuity = std::move(ParsedContinuity);
 }
+
+
+
+CC_continuity::~CC_continuity() = default;
+
+CC_continuity::CC_continuity(CC_continuity const& other)
+: text(other.text)
+{
+    for (auto&& i : other.m_parsedContinuity) {
+        m_parsedContinuity.emplace_back(i->clone());
+    }
+}
+
+CC_continuity& CC_continuity::operator=(CC_continuity const& other)
+{
+    CC_continuity copy(other);
+    swap(*this, copy);
+    return *this;
+}
+
+CC_continuity::CC_continuity(CC_continuity&&) noexcept = default;
+CC_continuity& CC_continuity::operator=(CC_continuity&&) noexcept = default;
 
 
 // Test Suite stuff
 struct CC_continuity_values {
-    string text;
-    string GetText;
+    std::string text;
+    std::string GetText;
 };
 
 bool Check_CC_continuity(const CC_continuity& underTest,
@@ -78,14 +91,14 @@ void CC_continuity_UnitTests()
     assert(Check_CC_continuity(underTest2, values));
 
     // Set some text
-    underTest2 = CC_continuity{"this is some text"};
-    values.text = "this is some text";
+    underTest2 = CC_continuity{"mt E REM"};
+    values.text = "mt E REM";
     values.GetText = values.text;
     assert(Check_CC_continuity(underTest2, values));
 
     // Set some text
-    underTest2 = CC_continuity{"different words"};
-    values.text = "different words";
+    underTest2 = CC_continuity{"ewns np"};
+    values.text = "ewns np";
     values.GetText = values.text;
     assert(Check_CC_continuity(underTest2, values));
 

@@ -174,6 +174,11 @@ std::ostream& ContPoint::Print(std::ostream& os) const
     return os << "Point:";
 }
 
+std::unique_ptr<ContPoint> ContPoint::clone() const
+{
+    return std::make_unique<ContPoint>();
+}
+
 CC_coord ContStartPoint::Get(AnimateCompile& anim) const
 {
     return anim.GetStartingPosition();
@@ -183,6 +188,11 @@ std::ostream& ContStartPoint::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << "Start Point";
+}
+
+std::unique_ptr<ContPoint> ContStartPoint::clone() const
+{
+    return std::make_unique<ContStartPoint>();
 }
 
 CC_coord ContNextPoint::Get(AnimateCompile& anim) const
@@ -196,6 +206,11 @@ std::ostream& ContNextPoint::Print(std::ostream& os) const
     return os << "Next Point";
 }
 
+std::unique_ptr<ContPoint> ContNextPoint::clone() const
+{
+    return std::make_unique<ContNextPoint>();
+}
+
 CC_coord ContRefPoint::Get(AnimateCompile& anim) const
 {
     return anim.GetReferencePointPosition(refnum);
@@ -205,6 +220,11 @@ std::ostream& ContRefPoint::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << "Ref Point " << refnum;
+}
+
+std::unique_ptr<ContPoint> ContRefPoint::clone() const
+{
+    return std::make_unique<ContRefPoint>(refnum);
 }
 
 std::ostream& ContValue::Print(std::ostream& os) const
@@ -219,6 +239,11 @@ std::ostream& ContValueFloat::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << val;
+}
+
+std::unique_ptr<ContValue> ContValueFloat::clone() const
+{
+    return std::make_unique<ContValueFloat>(val);
 }
 
 float ContValueDefined::Get(AnimateCompile&) const
@@ -245,6 +270,11 @@ std::ostream& ContValueDefined::Print(std::ostream& os) const
     return os << "Defined:" << ContDefinedValue_strings[val];
 }
 
+std::unique_ptr<ContValue> ContValueDefined::clone() const
+{
+    return std::make_unique<ContValueDefined>(val);
+}
+
 float ContValueAdd::Get(AnimateCompile& anim) const
 {
     return (val1->Get(anim) + val2->Get(anim));
@@ -254,6 +284,11 @@ std::ostream& ContValueAdd::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << *val1 << " + " << *val2;
+}
+
+std::unique_ptr<ContValue> ContValueAdd::clone() const
+{
+    return std::make_unique<ContValueAdd>(val1->clone(), val2->clone());
 }
 
 float ContValueSub::Get(AnimateCompile& anim) const
@@ -267,6 +302,11 @@ std::ostream& ContValueSub::Print(std::ostream& os) const
     return os << *val1 << " - " << *val2;
 }
 
+std::unique_ptr<ContValue> ContValueSub::clone() const
+{
+    return std::make_unique<ContValueSub>(val1->clone(), val2->clone());
+}
+
 float ContValueMult::Get(AnimateCompile& anim) const
 {
     return (val1->Get(anim) * val2->Get(anim));
@@ -276,6 +316,11 @@ std::ostream& ContValueMult::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << *val1 << " * " << *val2;
+}
+
+std::unique_ptr<ContValue> ContValueMult::clone() const
+{
+    return std::make_unique<ContValueMult>(val1->clone(), val2->clone());
 }
 
 float ContValueDiv::Get(AnimateCompile& anim) const
@@ -296,12 +341,22 @@ std::ostream& ContValueDiv::Print(std::ostream& os) const
     return os << *val1 << " / " << *val2;
 }
 
+std::unique_ptr<ContValue> ContValueDiv::clone() const
+{
+    return std::make_unique<ContValueDiv>(val1->clone(), val2->clone());
+}
+
 float ContValueNeg::Get(AnimateCompile& anim) const { return -val->Get(anim); }
 
 std::ostream& ContValueNeg::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << "- " << *val;
+}
+
+std::unique_ptr<ContValue> ContValueNeg::clone() const
+{
+    return std::make_unique<ContValueNeg>(val->clone());
 }
 
 float ContValueREM::Get(AnimateCompile& anim) const
@@ -315,6 +370,11 @@ std::ostream& ContValueREM::Print(std::ostream& os) const
     return os << "REM";
 }
 
+std::unique_ptr<ContValue> ContValueREM::clone() const
+{
+    return std::make_unique<ContValueREM>();
+}
+
 float ContValueVar::Get(AnimateCompile& anim) const
 {
     return anim.GetVarValue(varnum, this);
@@ -324,6 +384,11 @@ std::ostream& ContValueVar::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << "Var " << varnum;
+}
+
+std::unique_ptr<ContValue> ContValueVar::clone() const
+{
+    return std::make_unique<ContValueVar>(varnum);
 }
 
 void ContValueVar::Set(AnimateCompile& anim, float v)
@@ -346,6 +411,11 @@ std::ostream& ContFuncDir::Print(std::ostream& os) const
     return os << "Direction to " << *pnt;
 }
 
+std::unique_ptr<ContValue> ContFuncDir::clone() const
+{
+    return std::make_unique<ContFuncDir>(pnt->clone());
+}
+
 float ContFuncDirFrom::Get(AnimateCompile& anim) const
 {
     auto start = pnt_start->Get(anim);
@@ -362,6 +432,11 @@ std::ostream& ContFuncDirFrom::Print(std::ostream& os) const
     return os << "Direction from " << *pnt_start << " to " << *pnt_end;
 }
 
+std::unique_ptr<ContValue> ContFuncDirFrom::clone() const
+{
+    return std::make_unique<ContFuncDirFrom>(pnt_start->clone(), pnt_end->clone());
+}
+
 float ContFuncDist::Get(AnimateCompile& anim) const
 {
     auto vector = pnt->Get(anim) - anim.GetPointPosition();
@@ -372,6 +447,11 @@ std::ostream& ContFuncDist::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << "Distance to " << *pnt;
+}
+
+std::unique_ptr<ContValue> ContFuncDist::clone() const
+{
+    return std::make_unique<ContFuncDist>(pnt->clone());
 }
 
 float ContFuncDistFrom::Get(AnimateCompile& anim) const
@@ -386,6 +466,11 @@ std::ostream& ContFuncDistFrom::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << "Distance from " << *pnt_start << " to " << *pnt_end;
+}
+
+std::unique_ptr<ContValue> ContFuncDistFrom::clone() const
+{
+    return std::make_unique<ContFuncDistFrom>(pnt_start->clone(), pnt_end->clone());
 }
 
 float ContFuncEither::Get(AnimateCompile& anim) const
@@ -416,6 +501,11 @@ std::ostream& ContFuncEither::Print(std::ostream& os) const
               << ", depending on whichever is a shorter angle to " << *pnt;
 }
 
+std::unique_ptr<ContValue> ContFuncEither::clone() const
+{
+    return std::make_unique<ContFuncEither>(dir1->clone(), dir2->clone(), pnt->clone());
+}
+
 float ContFuncOpp::Get(AnimateCompile& anim) const
 {
     return (dir->Get(anim) + 180.0f);
@@ -425,6 +515,11 @@ std::ostream& ContFuncOpp::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << "opposite direction of " << *dir;
+}
+
+std::unique_ptr<ContValue> ContFuncOpp::clone() const
+{
+    return std::make_unique<ContFuncOpp>(dir->clone());
 }
 
 float ContFuncStep::Get(AnimateCompile& anim) const
@@ -438,6 +533,11 @@ std::ostream& ContFuncStep::Print(std::ostream& os) const
     super::Print(os);
     return os << "Step drill at " << *numbeats << " beats for a block size of "
               << *blksize << " from point " << *pnt;
+}
+
+std::unique_ptr<ContValue> ContFuncStep::clone() const
+{
+    return std::make_unique<ContFuncStep>(numbeats->clone(), blksize->clone(), pnt->clone());
 }
 
 std::ostream& ContProcedure::Print(std::ostream& os) const
@@ -457,6 +557,18 @@ std::ostream& ContProcSet::Print(std::ostream& os) const
     return os << "Setting variable " << *var << " to " << *val;
 }
 
+std::unique_ptr<ContProcedure> ContProcSet::clone() const
+{
+    // we need to make a copy of the var, then dynamically cast to std::unique_ptr<ContValueVar>
+    auto var_clone = var->clone();
+    if (ContValueVar* cast = dynamic_cast<ContValueVar*>(var_clone.get())) {
+        std::unique_ptr<ContValueVar> t(cast);
+        var_clone.release();
+        return std::make_unique<ContProcSet>(std::move(t), val->clone());
+    }
+    throw std::runtime_error("ContProcSet var was not of type ContValueVar");
+}
+
 void ContProcBlam::Compile(AnimateCompile& anim)
 {
     ContNextPoint np;
@@ -471,6 +583,11 @@ std::ostream& ContProcBlam::Print(std::ostream& os) const
     return os << "BLAM";
 }
 
+std::unique_ptr<ContProcedure> ContProcBlam::clone() const
+{
+    return std::make_unique<ContProcBlam>();
+}
+
 void ContProcCM::Compile(AnimateCompile& anim)
 {
     DoCounterMarch(*this, anim, *pnt1, *pnt2, *stps, *dir1, *dir2, *numbeats);
@@ -482,6 +599,11 @@ std::ostream& ContProcCM::Print(std::ostream& os) const
     return os << "CounterMarch starting at " << *pnt1 << " passing through "
               << *pnt2 << " stepping " << *stps << " off points, first moving "
               << *dir1 << " then " << *dir2 << " for number beats " << *numbeats;
+}
+
+std::unique_ptr<ContProcedure> ContProcCM::clone() const
+{
+    return std::make_unique<ContProcCM>(pnt1->clone(), pnt2->clone(), stps->clone(), dir1->clone(), dir2->clone(), numbeats->clone());
 }
 
 void ContProcDMCM::Compile(AnimateCompile& anim)
@@ -533,6 +655,11 @@ std::ostream& ContProcDMCM::Print(std::ostream& os) const
               << " passing through " << *pnt2 << " for number beats" << *numbeats;
 }
 
+std::unique_ptr<ContProcedure> ContProcDMCM::clone() const
+{
+    return std::make_unique<ContProcDMCM>(pnt1->clone(), pnt2->clone(), numbeats->clone());
+}
+
 void ContProcDMHS::Compile(AnimateCompile& anim)
 {
     short b_hs;
@@ -576,6 +703,11 @@ std::ostream& ContProcDMHS::Print(std::ostream& os) const
     return os << "Diagonal march then HighStep to " << *pnt;
 }
 
+std::unique_ptr<ContProcedure> ContProcDMHS::clone() const
+{
+    return std::make_unique<ContProcDMHS>(pnt->clone());
+}
+
 void ContProcEven::Compile(AnimateCompile& anim)
 {
     auto c = pnt->Get(anim) - anim.GetPointPosition();
@@ -594,6 +726,11 @@ std::ostream& ContProcEven::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << "Even march of step size " << *stps << " to " << *pnt;
+}
+
+std::unique_ptr<ContProcedure> ContProcEven::clone() const
+{
+    return std::make_unique<ContProcEven>(stps->clone(), pnt->clone());
 }
 
 void ContProcEWNS::Compile(AnimateCompile& anim)
@@ -621,6 +758,11 @@ std::ostream& ContProcEWNS::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << "March EastWest/NorthSouth to " << *pnt;
+}
+
+std::unique_ptr<ContProcedure> ContProcEWNS::clone() const
+{
+    return std::make_unique<ContProcEWNS>(pnt->clone());
 }
 
 void ContProcFountain::Compile(AnimateCompile& anim)
@@ -704,6 +846,11 @@ std::ostream& ContProcFountain::Print(std::ostream& os) const
     return os << "ending at " << *pnt;
 }
 
+std::unique_ptr<ContProcedure> ContProcFountain::clone() const
+{
+    return std::make_unique<ContProcFountain>(dir1->clone(), dir2->clone(), stepsize1 ? stepsize1->clone() : nullptr, stepsize2 ? stepsize2->clone() : nullptr, pnt->clone());
+}
+
 void ContProcFM::Compile(AnimateCompile& anim)
 {
     auto b = float2int(this, anim, stps->Get(anim));
@@ -728,6 +875,11 @@ std::ostream& ContProcFM::Print(std::ostream& os) const
     return os << "Forward march for steps " << *stps << " in direction " << *dir;
 }
 
+std::unique_ptr<ContProcedure> ContProcFM::clone() const
+{
+    return std::make_unique<ContProcFM>(stps->clone(), dir->clone());
+}
+
 void ContProcFMTO::Compile(AnimateCompile& anim)
 {
     auto c = pnt->Get(anim) - anim.GetPointPosition();
@@ -742,6 +894,11 @@ std::ostream& ContProcFMTO::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << "Forward march to " << *pnt;
+}
+
+std::unique_ptr<ContProcedure> ContProcFMTO::clone() const
+{
+    return std::make_unique<ContProcFMTO>(pnt->clone());
 }
 
 static inline Coord roundcoord(Coord a, Coord mod)
@@ -779,6 +936,11 @@ std::ostream& ContProcGrid::Print(std::ostream& os) const
     return os << "Move on Grid of " << *grid << " spacing";
 }
 
+std::unique_ptr<ContProcedure> ContProcGrid::clone() const
+{
+    return std::make_unique<ContProcGrid>(grid->clone());
+}
+
 void ContProcHSCM::Compile(AnimateCompile& anim)
 {
     ContValueFloat steps(1.0);
@@ -809,6 +971,11 @@ std::ostream& ContProcHSCM::Print(std::ostream& os) const
     super::Print(os);
     return os << "High Step CounterMarch starting at " << *pnt1
               << " passing through " << *pnt2 << " for number beats" << *numbeats;
+}
+
+std::unique_ptr<ContProcedure> ContProcHSCM::clone() const
+{
+    return std::make_unique<ContProcHSCM>(pnt1->clone(), pnt2->clone(), numbeats->clone());
 }
 
 void ContProcHSDM::Compile(AnimateCompile& anim)
@@ -853,6 +1020,11 @@ std::ostream& ContProcHSDM::Print(std::ostream& os) const
     return os << "HighStep then Diagonal march to " << *pnt;
 }
 
+std::unique_ptr<ContProcedure> ContProcHSDM::clone() const
+{
+    return std::make_unique<ContProcHSDM>(pnt->clone());
+}
+
 void ContProcMagic::Compile(AnimateCompile& anim)
 {
     auto c = pnt->Get(anim) - anim.GetPointPosition();
@@ -863,6 +1035,11 @@ std::ostream& ContProcMagic::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << "Magic step to " << *pnt;
+}
+
+std::unique_ptr<ContProcedure> ContProcMagic::clone() const
+{
+    return std::make_unique<ContProcMagic>(pnt->clone());
 }
 
 void ContProcMarch::Compile(AnimateCompile& anim)
@@ -900,6 +1077,11 @@ std::ostream& ContProcMarch::Print(std::ostream& os) const
     return os;
 }
 
+std::unique_ptr<ContProcedure> ContProcMarch::clone() const
+{
+    return std::make_unique<ContProcMarch>(stpsize->clone(), stps->clone(), dir->clone(), (facedir) ? facedir->clone() : nullptr);
+}
+
 void ContProcMT::Compile(AnimateCompile& anim)
 {
     auto b = float2int(this, anim, numbeats->Get(anim));
@@ -916,6 +1098,11 @@ std::ostream& ContProcMT::Print(std::ostream& os) const
     return os << "MarkTime for " << *numbeats << " facing " << *dir;
 }
 
+std::unique_ptr<ContProcedure> ContProcMT::clone() const
+{
+    return std::make_unique<ContProcMT>(numbeats->clone(), dir->clone());
+}
+
 void ContProcMTRM::Compile(AnimateCompile& anim)
 {
     anim.Append(std::make_shared<AnimateCommandMT>(anim.GetBeatsRemaining(),
@@ -927,6 +1114,11 @@ std::ostream& ContProcMTRM::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << "MarkTime for Remaining Beats facing " << *dir;
+}
+
+std::unique_ptr<ContProcedure> ContProcMTRM::clone() const
+{
+    return std::make_unique<ContProcMTRM>(dir->clone());
 }
 
 void ContProcNSEW::Compile(AnimateCompile& anim)
@@ -954,6 +1146,11 @@ std::ostream& ContProcNSEW::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << "March NorthSouth/EastWest to " << *pnt;
+}
+
+std::unique_ptr<ContProcedure> ContProcNSEW::clone() const
+{
+    return std::make_unique<ContProcNSEW>(pnt->clone());
 }
 
 void ContProcRotate::Compile(AnimateCompile& anim)
@@ -987,3 +1184,9 @@ std::ostream& ContProcRotate::Print(std::ostream& os) const
     return os << "Rotate at angle " << *ang << " for steps " << *stps
               << " around pivot point " << *pnt;
 }
+
+std::unique_ptr<ContProcedure> ContProcRotate::clone() const
+{
+    return std::make_unique<ContProcRotate>(ang->clone(), stps->clone(), pnt->clone());
+}
+

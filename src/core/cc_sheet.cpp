@@ -776,7 +776,7 @@ void CC_sheet::CC_sheet_round_trip_test()
         blank_sheet.SetPosition(CC_coord(30, 40), 0, 2);
         blank_sheet.SetPosition(CC_coord(52, 50), 0, 3);
         blank_sheet.SetBeats(13);
-        blank_sheet.GetContinuityBySymbol(SYMBOL_PLAIN) = CC_continuity{"continuity test"};
+        blank_sheet.GetContinuityBySymbol(SYMBOL_PLAIN) = CC_continuity{"mt E REM"};
         blank_sheet.mPrintableContinuity = CC_print_continuity{
             "number 1", "duuuude, writing this testing is boring"
         };
