@@ -89,7 +89,7 @@ public:
     CC_show_command_pair Create_RotatePointPositionsCommand(int rotateAmount, int ref) const;
     CC_show_command_pair Create_SetReferencePointToRef0(int ref) const;
     CC_show_command_pair Create_SetSymbolCommand(SYMBOL_TYPE sym) const;
-    CC_show_command_pair Create_SetSymbolCommand(const SelectionList &whichDots, SYMBOL_TYPE sym) const;
+    CC_show_command_pair Create_SetSymbolCommand(const SelectionList& whichDots, SYMBOL_TYPE sym) const;
     CC_show_command_pair Create_SetContinuityTextCommand(SYMBOL_TYPE which_sym, std::string const& text) const;
     CC_show_command_pair Create_SetLabelFlipCommand(std::map<int, bool> const& new_flip) const;
     CC_show_command_pair Create_SetLabelRightCommand(bool right) const;

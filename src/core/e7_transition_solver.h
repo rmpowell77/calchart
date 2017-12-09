@@ -19,7 +19,7 @@
  * that are used by the transition solve.
  */
 struct TransitionSolverParams {
-    
+
     /*!
      * @brief An enumeration that uniquely identifies
      * each algorithm that can be used to solve a transition.
@@ -31,7 +31,7 @@ struct TransitionSolverParams {
         E7_ALGORITHM__SOVER_ELICEIRI_HERSHKOVITZ,
         END,
     };
-    
+
     /*!
      * @brief Identifies a list of destinations that
      * are allowed for members of a particular marcher
@@ -41,21 +41,21 @@ struct TransitionSolverParams {
      * to move to any destination for EITHER group.
      */
     struct GroupConstraint {
-        GroupConstraint() {};
-        
+        GroupConstraint(){};
+
         /*!
          * @brief A collection of the indices of the marchers
          * that are included in this group.
          */
         std::set<unsigned> marchers;
-        
+
         /*!
          * @brief A collection of the indices of the destinations
          * where the marchers in this group can finish.
          */
         std::set<unsigned> allowedDestinations;
     };
-    
+
     /*!
      * @brief An instruction that can be assigned to a marcher.
      * @detail An instruction has a direct mapping to a CalChart continuity.
@@ -75,35 +75,42 @@ struct TransitionSolverParams {
             HSDM,
             END
         };
-        
-        MarcherInstruction() : movementPattern(EWNS), waitBeats(0) {};
-        
+
+        MarcherInstruction()
+            : movementPattern(EWNS)
+            , waitBeats(0){};
+
         /*!
          * @brief The movement pattern that will be assigned to any
          * marcher that follows this instruction.
          */
         Pattern movementPattern;
-        
+
         /*!
          * @brief For any marcher following this instruction, the number
          * of beats to wait before moving.
          */
         unsigned waitBeats;
     };
-    
-    TransitionSolverParams() { for (size_t i = 0; i < availableInstructionsMask.size(); i++) { availableInstructionsMask[i] = false; } };
-    
+
+    TransitionSolverParams()
+    {
+        for (size_t i = 0; i < availableInstructionsMask.size(); i++) {
+            availableInstructionsMask[i] = false;
+        }
+    };
+
     /*!
      * @brief Identifies the algorithm that should be used to solve the transition.
      */
     AlgorithmIdentifier algorithm;
-    
+
     /*!
      * @brief Identifies groups of marchers that have special rules about which
      * destinations they can be assigned.
      */
     std::vector<GroupConstraint> groups;
-    
+
     /*!
      * @brief Identifies the instructions that can be assigned to the marchers
      * that are engaging in this transition.
@@ -116,7 +123,7 @@ struct TransitionSolverParams {
      * the instruction is considered invalid.
      */
     std::array<MarcherInstruction, 8> availableInstructions;
-    
+
     /*!
      * @brief Defines which instructions of the availableInstructions
      * can be used to solve the transition.
@@ -132,7 +139,7 @@ struct TransitionSolverParams {
  * @brief A transition solution, as returned by the transition solver.
  */
 struct TransitionSolverResult {
-    
+
     /*!
      * @brief Identifies whether or not a solution was found.
      * @detail If this value is true, then a solution was found
@@ -142,7 +149,7 @@ struct TransitionSolverResult {
      * other fields.
      */
     bool successfullySolved;
-    
+
     /*!
      * @brief If a solution was found, then this will contain
      * the number of beats that marchers actually move before stopping
@@ -151,7 +158,7 @@ struct TransitionSolverResult {
      * this field is undefined.
      */
     unsigned numBeatsOfMovement;
-    
+
     /*!
      * @brief If a solution was found, this will contain the destination
      * positions, indexed according to the marcher that should travel
@@ -160,7 +167,7 @@ struct TransitionSolverResult {
      * for this field is undefined.
      */
     std::vector<CC_coord> finalPositions;
-    
+
     /*!
      * @brief If a solution was found, this will contain the continuity
      * text for each dot type that is included in the solution.
@@ -168,7 +175,7 @@ struct TransitionSolverResult {
      * this field is undefined.
      */
     std::map<SYMBOL_TYPE, std::string> continuities;
-    
+
     /*!
      * @brief If a solution was found, this will contain the dot types
      * that should be assigned to each marcher, indexed by the marcher
@@ -194,7 +201,7 @@ public:
      * indicates the overall progress of the transition as a percentage.
      */
     virtual void OnProgress(double progress) = 0;
-    
+
     /*!
      * @brief This method will be called when the transition solver
      * has a new estimate for the progress of the current subtask.
@@ -202,7 +209,7 @@ public:
      * indicates the progress of the current subtask as a percentage.
      */
     virtual void OnSubtaskProgress(double progress) = 0;
-    
+
     /*!
      * @brief This method will be called when the transition solver
      * discovers a new, preferred solution.
@@ -210,14 +217,14 @@ public:
      * all marchers reach their destinations in the solution.
      */
     virtual void OnNewPreferredSolution(unsigned numBeatsInSolution) = 0;
-    
+
     /*!
      * @brief This method will be called when the final solution
      * for the transition is selected.
      * @param finalSolution The final solution for the transition.
      */
     virtual void OnCalculationComplete(TransitionSolverResult finalSolution) = 0;
-    
+
     /*!
      * @brief This method will be called when the transition solver has
      * reached a point from which it can potentially abort.
@@ -246,4 +253,4 @@ std::vector<std::string> validateSheetForTransitionSolver(const CC_sheet& sheet)
  * solver as it runs, and that can take some role in deciding when the task should abort.
  * @result The solution for the transition between the provided stuntsheets.
  */
-TransitionSolverResult runTransitionSolver(const CC_sheet& sheet1, const CC_sheet& sheet2, TransitionSolverParams params, TransitionSolverDelegate *delegate);
+TransitionSolverResult runTransitionSolver(const CC_sheet& sheet1, const CC_sheet& sheet2, TransitionSolverParams params, TransitionSolverDelegate* delegate);

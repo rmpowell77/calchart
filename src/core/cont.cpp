@@ -1189,4 +1189,3 @@ std::unique_ptr<ContProcedure> ContProcRotate::clone() const
 {
     return std::make_unique<ContProcRotate>(ang->clone(), stps->clone(), pnt->clone());
 }
-

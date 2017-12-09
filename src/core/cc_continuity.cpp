@@ -28,7 +28,8 @@ extern int parsecontinuity();
 extern const char* yyinputbuffer;
 extern std::vector<std::unique_ptr<ContProcedure> > ParsedContinuity;
 
-CC_continuity::CC_continuity(std::string const& s) : text(s)
+CC_continuity::CC_continuity(std::string const& s)
+    : text(s)
 {
     yyinputbuffer = text.c_str();
     // parse out the error
@@ -39,12 +40,10 @@ CC_continuity::CC_continuity(std::string const& s) : text(s)
     m_parsedContinuity = std::move(ParsedContinuity);
 }
 
-
-
 CC_continuity::~CC_continuity() = default;
 
 CC_continuity::CC_continuity(CC_continuity const& other)
-: text(other.text)
+    : text(other.text)
 {
     for (auto&& i : other.m_parsedContinuity) {
         m_parsedContinuity.emplace_back(i->clone());
@@ -60,7 +59,6 @@ CC_continuity& CC_continuity::operator=(CC_continuity const& other)
 
 CC_continuity::CC_continuity(CC_continuity&&) noexcept = default;
 CC_continuity& CC_continuity::operator=(CC_continuity&&) noexcept = default;
-
 
 // Test Suite stuff
 struct CC_continuity_values {
@@ -91,19 +89,19 @@ void CC_continuity_UnitTests()
     assert(Check_CC_continuity(underTest2, values));
 
     // Set some text
-    underTest2 = CC_continuity{"mt E REM"};
+    underTest2 = CC_continuity{ "mt E REM" };
     values.text = "mt E REM";
     values.GetText = values.text;
     assert(Check_CC_continuity(underTest2, values));
 
     // Set some text
-    underTest2 = CC_continuity{"ewns np"};
+    underTest2 = CC_continuity{ "ewns np" };
     values.text = "ewns np";
     values.GetText = values.text;
     assert(Check_CC_continuity(underTest2, values));
 
     // Reset text
-    underTest2 = CC_continuity{""};
+    underTest2 = CC_continuity{ "" };
     values.text = "";
     values.GetText = values.text;
     assert(Check_CC_continuity(underTest2, values));

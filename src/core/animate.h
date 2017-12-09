@@ -80,7 +80,6 @@ private:
     unsigned numbeats;
 };
 
-
 class Animation {
 public:
     Animation(const CC_show& show, NotifyStatus notifyStatus, NotifyErrorList notifyErrorList);

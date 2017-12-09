@@ -726,7 +726,7 @@ CC_show_command_pair CC_show::Create_SetSymbolCommand(SYMBOL_TYPE sym) const
     return Create_SetSymbolCommand(mSelectionList, sym);
 }
 
-CC_show_command_pair CC_show::Create_SetSymbolCommand(const SelectionList &selectionList, SYMBOL_TYPE sym) const
+CC_show_command_pair CC_show::Create_SetSymbolCommand(const SelectionList& selectionList, SYMBOL_TYPE sym) const
 {
     std::map<unsigned, SYMBOL_TYPE> new_sym;
     std::map<unsigned, SYMBOL_TYPE> original_sym;

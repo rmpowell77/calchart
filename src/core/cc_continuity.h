@@ -28,18 +28,18 @@
 class ContProcedure;
 class ContinuityEditor;
 
-struct ParseError : public std::runtime_error
-{
+struct ParseError : public std::runtime_error {
     ParseError(std::string const& str, int l, int c)
         : std::runtime_error(std::string("ParseError of ") + str + " at " + std::to_string(l) + ", " + std::to_string(c))
         , line(l)
-        , column(c) {}
+        , column(c)
+    {
+    }
     int line, column;
 };
 
 class CC_continuity {
 public:
-
     // this could throw ParseError
     CC_continuity(std::string const& s = "");
     ~CC_continuity();
@@ -58,7 +58,7 @@ public:
 
     auto GetText() const noexcept { return text; }
 
-    std::vector<std::unique_ptr<ContProcedure>> const& GetParsedContinuity() const noexcept { return m_parsedContinuity; }
+    std::vector<std::unique_ptr<ContProcedure> > const& GetParsedContinuity() const noexcept { return m_parsedContinuity; }
 
 private:
     std::string text;
