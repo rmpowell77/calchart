@@ -49,16 +49,17 @@ public:
     CC_continuity(CC_continuity&&) noexcept;
     CC_continuity& operator=(CC_continuity&&) noexcept;
 
+    auto GetText() const noexcept { return text; }
+
+    std::vector<std::unique_ptr<ContProcedure> > const& GetParsedContinuity() const noexcept { return m_parsedContinuity; }
+
     friend void swap(CC_continuity& lhs, CC_continuity& rhs)
     {
         using std::swap;
         swap(lhs.text, rhs.text);
         swap(lhs.m_parsedContinuity, rhs.m_parsedContinuity);
     }
-
-    auto GetText() const noexcept { return text; }
-
-    std::vector<std::unique_ptr<ContProcedure> > const& GetParsedContinuity() const noexcept { return m_parsedContinuity; }
+    friend bool operator==(CC_continuity const& lhs, CC_continuity const& rhs);
 
 private:
     std::string text;

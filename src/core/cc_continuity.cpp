@@ -60,6 +60,13 @@ CC_continuity& CC_continuity::operator=(CC_continuity const& other)
 CC_continuity::CC_continuity(CC_continuity&&) noexcept = default;
 CC_continuity& CC_continuity::operator=(CC_continuity&&) noexcept = default;
 
+bool operator==(CC_continuity const& lhs, CC_continuity const& rhs)
+{
+    return std::equal(lhs.m_parsedContinuity.begin(), lhs.m_parsedContinuity.end(), rhs.m_parsedContinuity.begin(), rhs.m_parsedContinuity.end(), [](auto&& a, auto&& b) {
+        return *a == *b;
+    });
+}
+
 // Test Suite stuff
 struct CC_continuity_values {
     std::string text;

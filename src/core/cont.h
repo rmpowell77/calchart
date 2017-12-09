@@ -441,7 +441,10 @@ public:
     virtual void Compile(AnimateCompile& anim) = 0;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual std::unique_ptr<ContProcedure> clone() const = 0;
+    virtual bool equal(ContProcedure const&) const { return true; };
 };
+
+bool operator==(ContProcedure const& lhs, ContProcedure const& rhs);
 
 class ContProcSet : public ContProcedure {
     using super = ContProcedure;

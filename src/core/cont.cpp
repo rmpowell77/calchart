@@ -546,6 +546,10 @@ std::ostream& ContProcedure::Print(std::ostream& os) const
     return os << "Procedure: ";
 }
 
+bool operator==(ContProcedure const& lhs, ContProcedure const& rhs) {
+    return lhs.equal(rhs);
+}
+
 void ContProcSet::Compile(AnimateCompile& anim)
 {
     var->Set(anim, val->Get(anim));
