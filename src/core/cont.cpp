@@ -546,7 +546,8 @@ std::ostream& ContProcedure::Print(std::ostream& os) const
     return os << "Procedure: ";
 }
 
-bool operator==(ContProcedure const& lhs, ContProcedure const& rhs) {
+bool operator==(ContProcedure const& lhs, ContProcedure const& rhs)
+{
     return lhs.equal(rhs);
 }
 
@@ -1193,5 +1194,4 @@ std::unique_ptr<ContProcedure> ContProcRotate::clone() const
 {
     return std::make_unique<ContProcRotate>(ang->clone(), stps->clone(), pnt->clone());
 }
-
 }
