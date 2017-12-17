@@ -472,6 +472,11 @@ IMPLEMENT_CONFIGURATION_FUNCTIONS(ScrollDirectionNatural, bool, true);
 IMPLEMENT_CONFIGURATION_FUNCTIONS(CommandUndoSetSheet, bool, false);
 IMPLEMENT_CONFIGURATION_FUNCTIONS(CommandUndoSelection, bool, false);
 
+IMPLEMENT_CONFIGURATION_FUNCTIONS(ContCellFontSize, long, 14);
+IMPLEMENT_CONFIGURATION_FUNCTIONS(ContCellRounding, long, 3);
+IMPLEMENT_CONFIGURATION_FUNCTIONS(ContCellTextPadding, long, 4);
+IMPLEMENT_CONFIGURATION_FUNCTIONS(ContCellBoxPadding, long, 4);
+
 // OBSOLETE Settigns
 // "MainFrameZoom" now obsolete with version post 3.2, use "MainFrameZoom2"
 // IMPLEMENT_CONFIGURATION_FUNCTIONS( MainFrameZoom, float, 0.5);

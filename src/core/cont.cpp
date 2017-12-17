@@ -26,6 +26,49 @@
 #include "cont.h"
 #include "parse.h"
 
+BOOST_CLASS_EXPORT_GUID(CalChart::ContToken, "ContToken")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContPoint, "ContPoint")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContStartPoint, "ContStartPoint")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContNextPoint, "ContNextPoint")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContRefPoint, "ContRefPoint")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContValue, "ContValue")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContValueFloat, "ContValueFloat")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContValueDefined, "ContValueDefined")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContValueAdd, "ContValueAdd")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContValueSub, "ContValueSub")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContValueMult, "ContValueMult")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContValueDiv, "ContValueDiv")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContValueNeg, "ContValueNeg")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContValueREM, "ContValueREM")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContValueVar, "ContValueVar")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContFuncDir, "ContFuncDir")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContFuncDirFrom, "ContFuncDirFrom")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContFuncDist, "ContFuncDist")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContFuncDistFrom, "ContFuncDistFrom")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContFuncEither, "ContFuncEither")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContFuncOpp, "ContFuncOpp")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContFuncStep, "ContFuncStep")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContProcedure, "ContProcedure")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContProcSet, "ContProcSet")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContProcBlam, "ContProcBlam")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContProcCM, "ContProcCM")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContProcDMCM, "ContProcDMCM")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContProcDMHS, "ContProcDMHS")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContProcEven, "ContProcEven")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContProcEWNS, "ContProcEWNS")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContProcFountain, "ContProcFountain")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContProcFM, "ContProcFM")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContProcFMTO, "ContProcFMTO")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContProcGrid, "ContProcGrid")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContProcHSCM, "ContProcHSCM")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContProcHSDM, "ContProcHSDM")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContProcMagic, "ContProcMagic")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContProcMarch, "ContProcMarch")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContProcMT, "ContProcMT")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContProcMTRM, "ContProcMTRM")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContProcNSEW, "ContProcNSEW")
+BOOST_CLASS_EXPORT_GUID(CalChart::ContProcRotate, "ContProcRotate")
+
 namespace CalChart {
 
 static const std::string ContDefinedValue_strings[] = {
@@ -160,6 +203,7 @@ ContToken::ContToken()
     , col(yylloc.first_column)
 {
 }
+
 std::ostream& ContToken::Print(std::ostream& os) const
 {
     return os << "[" << line << "," << col << "]: ";
@@ -174,6 +218,15 @@ std::ostream& ContPoint::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << "Point:";
+}
+
+DrawableCont ContPoint::GetDrawableCont() const
+{
+    return {
+        ContType::value,
+        "Point",
+        {}
+    };
 }
 
 std::unique_ptr<ContPoint> ContPoint::clone() const
@@ -192,6 +245,15 @@ std::ostream& ContStartPoint::Print(std::ostream& os) const
     return os << "Start Point";
 }
 
+DrawableCont ContStartPoint::GetDrawableCont() const
+{
+    return {
+        ContType::value,
+        "Start Point",
+        {}
+    };
+}
+
 std::unique_ptr<ContPoint> ContStartPoint::clone() const
 {
     return std::make_unique<ContStartPoint>();
@@ -208,6 +270,15 @@ std::ostream& ContNextPoint::Print(std::ostream& os) const
     return os << "Next Point";
 }
 
+DrawableCont ContNextPoint::GetDrawableCont() const
+{
+    return {
+        ContType::value,
+        "Next Point",
+        {}
+    };
+}
+
 std::unique_ptr<ContPoint> ContNextPoint::clone() const
 {
     return std::make_unique<ContNextPoint>();
@@ -222,6 +293,15 @@ std::ostream& ContRefPoint::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << "Ref Point " << refnum;
+}
+
+DrawableCont ContRefPoint::GetDrawableCont() const
+{
+    return {
+        ContType::value,
+        std::string("Ref Point ") + std::to_string(refnum),
+        {}
+    };
 }
 
 std::unique_ptr<ContPoint> ContRefPoint::clone() const
@@ -241,6 +321,15 @@ std::ostream& ContValueFloat::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << val;
+}
+
+DrawableCont ContValueFloat::GetDrawableCont() const
+{
+    // to_string gives a lot of decimal points.  256 on the stack should be ok...?
+    if (int(val) == val) {
+        return { ContType::value, std::to_string(int(val)), {} };
+    }
+    return { ContType::value, std::to_string(val), {} };
 }
 
 std::unique_ptr<ContValue> ContValueFloat::clone() const
@@ -272,6 +361,8 @@ std::ostream& ContValueDefined::Print(std::ostream& os) const
     return os << "Defined:" << ContDefinedValue_strings[val];
 }
 
+DrawableCont ContValueDefined::GetDrawableCont() const { return { ContType::value, ContDefinedValue_strings[val], {} }; }
+
 std::unique_ptr<ContValue> ContValueDefined::clone() const
 {
     return std::make_unique<ContValueDefined>(val);
@@ -286,6 +377,15 @@ std::ostream& ContValueAdd::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << *val1 << " + " << *val2;
+}
+
+DrawableCont ContValueAdd::GetDrawableCont() const
+{
+    return {
+        ContType::value,
+        "( %@ + %@ )",
+        { val1->GetDrawableCont(), val2->GetDrawableCont() }
+    };
 }
 
 std::unique_ptr<ContValue> ContValueAdd::clone() const
@@ -304,6 +404,15 @@ std::ostream& ContValueSub::Print(std::ostream& os) const
     return os << *val1 << " - " << *val2;
 }
 
+DrawableCont ContValueSub::GetDrawableCont() const
+{
+    return {
+        ContType::value,
+        "( %@ - %@ )",
+        { val1->GetDrawableCont(), val2->GetDrawableCont() }
+    };
+}
+
 std::unique_ptr<ContValue> ContValueSub::clone() const
 {
     return std::make_unique<ContValueSub>(val1->clone(), val2->clone());
@@ -318,6 +427,15 @@ std::ostream& ContValueMult::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << *val1 << " * " << *val2;
+}
+
+DrawableCont ContValueMult::GetDrawableCont() const
+{
+    return {
+        ContType::value,
+        "( %@ * %@ )",
+        { val1->GetDrawableCont(), val2->GetDrawableCont() }
+    };
 }
 
 std::unique_ptr<ContValue> ContValueMult::clone() const
@@ -343,6 +461,15 @@ std::ostream& ContValueDiv::Print(std::ostream& os) const
     return os << *val1 << " / " << *val2;
 }
 
+DrawableCont ContValueDiv::GetDrawableCont() const
+{
+    return {
+        ContType::value,
+        "( %@ / %@ )",
+        { val1->GetDrawableCont(), val2->GetDrawableCont() }
+    };
+}
+
 std::unique_ptr<ContValue> ContValueDiv::clone() const
 {
     return std::make_unique<ContValueDiv>(val1->clone(), val2->clone());
@@ -354,6 +481,15 @@ std::ostream& ContValueNeg::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << "- " << *val;
+}
+
+DrawableCont ContValueNeg::GetDrawableCont() const
+{
+    return {
+        ContType::value,
+        "-%@",
+        { val->GetDrawableCont() }
+    };
 }
 
 std::unique_ptr<ContValue> ContValueNeg::clone() const
@@ -372,6 +508,15 @@ std::ostream& ContValueREM::Print(std::ostream& os) const
     return os << "REM";
 }
 
+DrawableCont ContValueREM::GetDrawableCont() const
+{
+    return {
+        ContType::value,
+        "Remaining",
+        {}
+    };
+}
+
 std::unique_ptr<ContValue> ContValueREM::clone() const
 {
     return std::make_unique<ContValueREM>();
@@ -386,6 +531,15 @@ std::ostream& ContValueVar::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << "Var " << varnum;
+}
+
+DrawableCont ContValueVar::GetDrawableCont() const
+{
+    return {
+        ContType::value,
+        s_contvar_names[varnum],
+        {}
+    };
 }
 
 std::unique_ptr<ContValue> ContValueVar::clone() const
@@ -413,6 +567,15 @@ std::ostream& ContFuncDir::Print(std::ostream& os) const
     return os << "Direction to " << *pnt;
 }
 
+DrawableCont ContFuncDir::GetDrawableCont() const
+{
+    return {
+        ContType::value,
+        "Direction to %@",
+        { pnt->GetDrawableCont() }
+    };
+}
+
 std::unique_ptr<ContValue> ContFuncDir::clone() const
 {
     return std::make_unique<ContFuncDir>(pnt->clone());
@@ -434,6 +597,15 @@ std::ostream& ContFuncDirFrom::Print(std::ostream& os) const
     return os << "Direction from " << *pnt_start << " to " << *pnt_end;
 }
 
+DrawableCont ContFuncDirFrom::GetDrawableCont() const
+{
+    return {
+        ContType::value,
+        "Direction from %@ to %@",
+        { pnt_start->GetDrawableCont(), pnt_end->GetDrawableCont() }
+    };
+}
+
 std::unique_ptr<ContValue> ContFuncDirFrom::clone() const
 {
     return std::make_unique<ContFuncDirFrom>(pnt_start->clone(), pnt_end->clone());
@@ -451,6 +623,15 @@ std::ostream& ContFuncDist::Print(std::ostream& os) const
     return os << "Distance to " << *pnt;
 }
 
+DrawableCont ContFuncDist::GetDrawableCont() const
+{
+    return {
+        ContType::value,
+        "Distance to %@",
+        { pnt->GetDrawableCont() }
+    };
+}
+
 std::unique_ptr<ContValue> ContFuncDist::clone() const
 {
     return std::make_unique<ContFuncDist>(pnt->clone());
@@ -466,6 +647,15 @@ std::ostream& ContFuncDistFrom::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << "Distance from " << *pnt_start << " to " << *pnt_end;
+}
+
+DrawableCont ContFuncDistFrom::GetDrawableCont() const
+{
+    return {
+        ContType::value,
+        "Distance from %@ to %@",
+        { pnt_start->GetDrawableCont(), pnt_end->GetDrawableCont() }
+    };
 }
 
 std::unique_ptr<ContValue> ContFuncDistFrom::clone() const
@@ -501,6 +691,15 @@ std::ostream& ContFuncEither::Print(std::ostream& os) const
               << ", depending on whichever is a shorter angle to " << *pnt;
 }
 
+DrawableCont ContFuncEither::GetDrawableCont() const
+{
+    return {
+        ContType::value,
+        "Either direction to %@ or %@, depending on whichever is a shorter angle to %@",
+        { dir1->GetDrawableCont(), dir2->GetDrawableCont(), pnt->GetDrawableCont() }
+    };
+}
+
 std::unique_ptr<ContValue> ContFuncEither::clone() const
 {
     return std::make_unique<ContFuncEither>(dir1->clone(), dir2->clone(), pnt->clone());
@@ -515,6 +714,15 @@ std::ostream& ContFuncOpp::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << "opposite direction of " << *dir;
+}
+
+DrawableCont ContFuncOpp::GetDrawableCont() const
+{
+    return {
+        ContType::value,
+        "opposite direction of %@",
+        { dir->GetDrawableCont() }
+    };
 }
 
 std::unique_ptr<ContValue> ContFuncOpp::clone() const
@@ -535,6 +743,15 @@ std::ostream& ContFuncStep::Print(std::ostream& os) const
               << *blksize << " from point " << *pnt;
 }
 
+DrawableCont ContFuncStep::GetDrawableCont() const
+{
+    return {
+        ContType::value,
+        "Step drill at %@ beats for a block size of %@ from point %@",
+        { numbeats->GetDrawableCont(), blksize->GetDrawableCont(), pnt->GetDrawableCont() }
+    };
+}
+
 std::unique_ptr<ContValue> ContFuncStep::clone() const
 {
     return std::make_unique<ContFuncStep>(numbeats->clone(), blksize->clone(), pnt->clone());
@@ -546,11 +763,6 @@ std::ostream& ContProcedure::Print(std::ostream& os) const
     return os << "Procedure: ";
 }
 
-bool operator==(ContProcedure const& lhs, ContProcedure const& rhs)
-{
-    return lhs.equal(rhs);
-}
-
 void ContProcSet::Compile(AnimateCompile& anim)
 {
     var->Set(anim, val->Get(anim));
@@ -560,6 +772,15 @@ std::ostream& ContProcSet::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << "Setting variable " << *var << " to " << *val;
+}
+
+DrawableCont ContProcSet::GetDrawableCont() const
+{
+    return {
+        ContType::procedure,
+        "variable %@ = %@",
+        { var->GetDrawableCont(), val->GetDrawableCont() }
+    };
 }
 
 std::unique_ptr<ContProcedure> ContProcSet::clone() const
@@ -588,6 +809,15 @@ std::ostream& ContProcBlam::Print(std::ostream& os) const
     return os << "BLAM";
 }
 
+DrawableCont ContProcBlam::GetDrawableCont() const
+{
+    return {
+        ContType::procedure,
+        "BLAM",
+        {}
+    };
+}
+
 std::unique_ptr<ContProcedure> ContProcBlam::clone() const
 {
     return std::make_unique<ContProcBlam>();
@@ -604,6 +834,15 @@ std::ostream& ContProcCM::Print(std::ostream& os) const
     return os << "CounterMarch starting at " << *pnt1 << " passing through "
               << *pnt2 << " stepping " << *stps << " off points, first moving "
               << *dir1 << " then " << *dir2 << " for number beats " << *numbeats;
+}
+
+DrawableCont ContProcCM::GetDrawableCont() const
+{
+    return {
+        ContType::procedure,
+        "CounterMarch starting at %@ passing through %@ stepping %@ off points, first moving %@ then %@ for number beats %@",
+        { pnt1->GetDrawableCont(), pnt2->GetDrawableCont(), stps->GetDrawableCont(), dir1->GetDrawableCont(), dir2->GetDrawableCont(), numbeats->GetDrawableCont() }
+    };
 }
 
 std::unique_ptr<ContProcedure> ContProcCM::clone() const
@@ -660,6 +899,15 @@ std::ostream& ContProcDMCM::Print(std::ostream& os) const
               << " passing through " << *pnt2 << " for number beats" << *numbeats;
 }
 
+DrawableCont ContProcDMCM::GetDrawableCont() const
+{
+    return {
+        ContType::procedure,
+        "Diagonal march CounterMarch starting at %@ passing through %@ for number beats %@",
+        { pnt1->GetDrawableCont(), pnt2->GetDrawableCont(), numbeats->GetDrawableCont() }
+    };
+}
+
 std::unique_ptr<ContProcedure> ContProcDMCM::clone() const
 {
     return std::make_unique<ContProcDMCM>(pnt1->clone(), pnt2->clone(), numbeats->clone());
@@ -708,6 +956,15 @@ std::ostream& ContProcDMHS::Print(std::ostream& os) const
     return os << "Diagonal march then HighStep to " << *pnt;
 }
 
+DrawableCont ContProcDMHS::GetDrawableCont() const
+{
+    return {
+        ContType::procedure,
+        "Diagonal march then HighStep to %@",
+        { pnt->GetDrawableCont() }
+    };
+}
+
 std::unique_ptr<ContProcedure> ContProcDMHS::clone() const
 {
     return std::make_unique<ContProcDMHS>(pnt->clone());
@@ -731,6 +988,15 @@ std::ostream& ContProcEven::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << "Even march of step size " << *stps << " to " << *pnt;
+}
+
+DrawableCont ContProcEven::GetDrawableCont() const
+{
+    return {
+        ContType::procedure,
+        "Even march %@ to %@",
+        { stps->GetDrawableCont(), pnt->GetDrawableCont() }
+    };
 }
 
 std::unique_ptr<ContProcedure> ContProcEven::clone() const
@@ -763,6 +1029,15 @@ std::ostream& ContProcEWNS::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << "March EastWest/NorthSouth to " << *pnt;
+}
+
+DrawableCont ContProcEWNS::GetDrawableCont() const
+{
+    return {
+        ContType::procedure,
+        "EastWest/NorthSouth to %@",
+        { pnt->GetDrawableCont() }
+    };
 }
 
 std::unique_ptr<ContProcedure> ContProcEWNS::clone() const
@@ -851,6 +1126,36 @@ std::ostream& ContProcFountain::Print(std::ostream& os) const
     return os << "ending at " << *pnt;
 }
 
+DrawableCont ContProcFountain::GetDrawableCont() const
+{
+    if (stepsize1 && stepsize2) {
+        return {
+            ContType::procedure,
+            "Fountain step, first going %@ then %@, first at %@, then at %@, ending at %@",
+            { dir1->GetDrawableCont(), dir2->GetDrawableCont(), stepsize1->GetDrawableCont(), stepsize2->GetDrawableCont(), pnt->GetDrawableCont() }
+        };
+    }
+    if (stepsize1) {
+        return {
+            ContType::procedure,
+            "Fountain step, first going %@ then %@, first at %@, ending at %@",
+            { dir1->GetDrawableCont(), dir2->GetDrawableCont(), stepsize1->GetDrawableCont(), pnt->GetDrawableCont() }
+        };
+    }
+    if (stepsize2) {
+        return {
+            ContType::procedure,
+            "Fountain step, first going %@ then %@, then at %@, ending at %@",
+            { dir1->GetDrawableCont(), dir2->GetDrawableCont(), stepsize2->GetDrawableCont(), pnt->GetDrawableCont() }
+        };
+    }
+    return {
+        ContType::procedure,
+        "Fountain step, first going %@ then %@, ending at %@",
+        { dir1->GetDrawableCont(), dir2->GetDrawableCont(), pnt->GetDrawableCont() }
+    };
+}
+
 std::unique_ptr<ContProcedure> ContProcFountain::clone() const
 {
     return std::make_unique<ContProcFountain>(dir1->clone(), dir2->clone(), stepsize1 ? stepsize1->clone() : nullptr, stepsize2 ? stepsize2->clone() : nullptr, pnt->clone());
@@ -880,6 +1185,15 @@ std::ostream& ContProcFM::Print(std::ostream& os) const
     return os << "Forward march for steps " << *stps << " in direction " << *dir;
 }
 
+DrawableCont ContProcFM::GetDrawableCont() const
+{
+    return {
+        ContType::procedure,
+        "Forward march %@ %@",
+        { stps->GetDrawableCont(), dir->GetDrawableCont() }
+    };
+}
+
 std::unique_ptr<ContProcedure> ContProcFM::clone() const
 {
     return std::make_unique<ContProcFM>(stps->clone(), dir->clone());
@@ -899,6 +1213,15 @@ std::ostream& ContProcFMTO::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << "Forward march to " << *pnt;
+}
+
+DrawableCont ContProcFMTO::GetDrawableCont() const
+{
+    return {
+        ContType::procedure,
+        "Forward march to %@",
+        { pnt->GetDrawableCont() }
+    };
 }
 
 std::unique_ptr<ContProcedure> ContProcFMTO::clone() const
@@ -941,6 +1264,15 @@ std::ostream& ContProcGrid::Print(std::ostream& os) const
     return os << "Move on Grid of " << *grid << " spacing";
 }
 
+DrawableCont ContProcGrid::GetDrawableCont() const
+{
+    return {
+        ContType::procedure,
+        "Move on Grid of %@ spacing",
+        { grid->GetDrawableCont() }
+    };
+}
+
 std::unique_ptr<ContProcedure> ContProcGrid::clone() const
 {
     return std::make_unique<ContProcGrid>(grid->clone());
@@ -976,6 +1308,15 @@ std::ostream& ContProcHSCM::Print(std::ostream& os) const
     super::Print(os);
     return os << "High Step CounterMarch starting at " << *pnt1
               << " passing through " << *pnt2 << " for number beats" << *numbeats;
+}
+
+DrawableCont ContProcHSCM::GetDrawableCont() const
+{
+    return {
+        ContType::procedure,
+        "High Step CounterMarch starting at %@ passing through %@ for number beats %@",
+        { pnt1->GetDrawableCont(), pnt2->GetDrawableCont(), numbeats->GetDrawableCont() }
+    };
 }
 
 std::unique_ptr<ContProcedure> ContProcHSCM::clone() const
@@ -1025,6 +1366,15 @@ std::ostream& ContProcHSDM::Print(std::ostream& os) const
     return os << "HighStep then Diagonal march to " << *pnt;
 }
 
+DrawableCont ContProcHSDM::GetDrawableCont() const
+{
+    return {
+        ContType::procedure,
+        "HighStep then Diagonal march to %@",
+        { pnt->GetDrawableCont() }
+    };
+}
+
 std::unique_ptr<ContProcedure> ContProcHSDM::clone() const
 {
     return std::make_unique<ContProcHSDM>(pnt->clone());
@@ -1040,6 +1390,15 @@ std::ostream& ContProcMagic::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << "Magic step to " << *pnt;
+}
+
+DrawableCont ContProcMagic::GetDrawableCont() const
+{
+    return {
+        ContType::procedure,
+        "Magic step to %@",
+        { pnt->GetDrawableCont() }
+    };
 }
 
 std::unique_ptr<ContProcedure> ContProcMagic::clone() const
@@ -1082,6 +1441,22 @@ std::ostream& ContProcMarch::Print(std::ostream& os) const
     return os;
 }
 
+DrawableCont ContProcMarch::GetDrawableCont() const
+{
+    if (facedir) {
+        return {
+            ContType::procedure,
+            "March step size %@ for %@ in direction %@ facing %@",
+            { stpsize->GetDrawableCont(), stps->GetDrawableCont(), dir->GetDrawableCont(), facedir->GetDrawableCont() }
+        };
+    }
+    return {
+        ContType::procedure,
+        "March step size %@ for steps %@ in direction %@",
+        { stpsize->GetDrawableCont(), stps->GetDrawableCont(), dir->GetDrawableCont() }
+    };
+}
+
 std::unique_ptr<ContProcedure> ContProcMarch::clone() const
 {
     return std::make_unique<ContProcMarch>(stpsize->clone(), stps->clone(), dir->clone(), (facedir) ? facedir->clone() : nullptr);
@@ -1103,6 +1478,15 @@ std::ostream& ContProcMT::Print(std::ostream& os) const
     return os << "MarkTime for " << *numbeats << " facing " << *dir;
 }
 
+DrawableCont ContProcMT::GetDrawableCont() const
+{
+    return {
+        ContType::procedure,
+        "MarkTime %@ %@",
+        { numbeats->GetDrawableCont(), dir->GetDrawableCont() }
+    };
+}
+
 std::unique_ptr<ContProcedure> ContProcMT::clone() const
 {
     return std::make_unique<ContProcMT>(numbeats->clone(), dir->clone());
@@ -1119,6 +1503,15 @@ std::ostream& ContProcMTRM::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << "MarkTime for Remaining Beats facing " << *dir;
+}
+
+DrawableCont ContProcMTRM::GetDrawableCont() const
+{
+    return {
+        ContType::procedure,
+        "MarkTime for Remaining %@",
+        { dir->GetDrawableCont() }
+    };
 }
 
 std::unique_ptr<ContProcedure> ContProcMTRM::clone() const
@@ -1151,6 +1544,15 @@ std::ostream& ContProcNSEW::Print(std::ostream& os) const
 {
     super::Print(os);
     return os << "March NorthSouth/EastWest to " << *pnt;
+}
+
+DrawableCont ContProcNSEW::GetDrawableCont() const
+{
+    return {
+        ContType::procedure,
+        "NorthSouth/EastWest to %@",
+        { pnt->GetDrawableCont() }
+    };
 }
 
 std::unique_ptr<ContProcedure> ContProcNSEW::clone() const
@@ -1186,8 +1588,17 @@ void ContProcRotate::Compile(AnimateCompile& anim)
 std::ostream& ContProcRotate::Print(std::ostream& os) const
 {
     super::Print(os);
-    return os << "Rotate at angle " << *ang << " for steps " << *stps
+    return os << "Rotate at angle " << *ang << " for " << *stps
               << " around pivot point " << *pnt;
+}
+
+DrawableCont ContProcRotate::GetDrawableCont() const
+{
+    return {
+        ContType::procedure,
+        "Rotate at angle %@ for steps %@ around pivot point %@",
+        { ang->GetDrawableCont(), stps->GetDrawableCont(), pnt->GetDrawableCont() }
+    };
 }
 
 std::unique_ptr<ContProcedure> ContProcRotate::clone() const

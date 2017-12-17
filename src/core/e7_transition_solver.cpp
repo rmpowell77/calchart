@@ -1916,86 +1916,87 @@ namespace e7NaminiaslRamirezZhang {
             for (unsigned improvementIteration = 0; improvementIteration < 3 || beat == maxBeats; improvementIteration++) {
                 collisionPairs = collisionSpace.collectCollisionPairs();
 
-                collisionSpace.clipToBeat(beat);
+                if (collisionPairs == lastCollisionPairs) {
 
-                break;
-            }
+                    break;
+                }
 
-            lastCollisionPairs = collisionSpace.collectCollisionPairs();
+                lastCollisionPairs = collisionSpace.collectCollisionPairs();
 
-            std::random_shuffle(collisionPairs.begin(), collisionPairs.end());
-            for (unsigned collisionIndex = 0; collisionIndex < collisionPairs.size(); collisionIndex++) {
+                std::random_shuffle(collisionPairs.begin(), collisionPairs.end());
+                for (unsigned collisionIndex = 0; collisionIndex < collisionPairs.size(); collisionIndex++) {
 
-                Collision& col = collisionPairs[collisionIndex];
+                    Collision& col = collisionPairs[collisionIndex];
 
-                // For each pair of colliding marchers, select the appropriate set of options for solving the collision
-                const std::vector<SolutionAdjustmentInstruction>* adjustmentOptionsPtr;
-                adjustmentOptionsPtr = &unfilteredOptions;
-                const std::vector<SolutionAdjustmentInstruction>& adjustmentOptions = *adjustmentOptionsPtr;
+                    // For each pair of colliding marchers, select the appropriate set of options for solving the collision
+                    const std::vector<SolutionAdjustmentInstruction>* adjustmentOptionsPtr;
+                    adjustmentOptionsPtr = &unfilteredOptions;
+                    const std::vector<SolutionAdjustmentInstruction>& adjustmentOptions = *adjustmentOptionsPtr;
 
-                // Find the most recent option that was used to fix the collision; start from there when figuring out what to do next with them
-                unsigned activeOptionIndex = allActiveOptions[{ col.firstMarcher, col.secondMarcher }];
-                SolutionAdjustmentInstruction activeOption = adjustmentOptions.at(activeOptionIndex);
-                unsigned bestOptionIndex = activeOptionIndex;
-                unsigned bestNumCollisions = (unsigned)collisionSpace.collectCollisionPairs().size();
+                    // Find the most recent option that was used to fix the collision; start from there when figuring out what to do next with them
+                    unsigned activeOptionIndex = allActiveOptions[{ col.firstMarcher, col.secondMarcher }];
+                    SolutionAdjustmentInstruction activeOption = adjustmentOptions.at(activeOptionIndex);
+                    unsigned bestOptionIndex = activeOptionIndex;
+                    unsigned bestNumCollisions = (unsigned)collisionSpace.collectCollisionPairs().size();
 
-                // Check through all fix options, and find the one which makes the most improvement
-                MarcherSolution mutableMarcherSolution1 = marcherSolutions[col.firstMarcher];
-                MarcherSolution mutableMarcherSolution2 = marcherSolutions[col.secondMarcher];
-                for (unsigned newOptionIndex = 0;; newOptionIndex++) {
-                    bool executingFinalIteration;
+                    // Check through all fix options, and find the one which makes the most improvement
+                    MarcherSolution mutableMarcherSolution1 = marcherSolutions[col.firstMarcher];
+                    MarcherSolution mutableMarcherSolution2 = marcherSolutions[col.secondMarcher];
+                    for (unsigned newOptionIndex = 0;; newOptionIndex++) {
+                        bool executingFinalIteration;
 
-                    executingFinalIteration = (newOptionIndex == adjustmentOptions.size());
-                    if (executingFinalIteration) {
-                        newOptionIndex = bestOptionIndex;
-                    }
+                        executingFinalIteration = (newOptionIndex == adjustmentOptions.size());
+                        if (executingFinalIteration) {
+                            newOptionIndex = bestOptionIndex;
+                        }
 
-                    SolutionAdjustmentInstruction newOption = adjustmentOptions.at(newOptionIndex);
+                        SolutionAdjustmentInstruction newOption = adjustmentOptions.at(newOptionIndex);
 
-                    MovingMarcher marcherMove1 = collisionSpace.getMarcherInstruction(col.firstMarcher);
-                    MovingMarcher marcherMove2 = collisionSpace.getMarcherInstruction(col.secondMarcher);
+                        MovingMarcher marcherMove1 = collisionSpace.getMarcherInstruction(col.firstMarcher);
+                        MovingMarcher marcherMove2 = collisionSpace.getMarcherInstruction(col.secondMarcher);
 
-                    bool badSolutionDuration = false;
-                    bool badSolutionDestination = false;
+                        bool badSolutionDuration = false;
+                        bool badSolutionDestination = false;
 
-                    SolverCoord destination1 = mutableMarcherSolution1.endPos;
-                    SolverCoord destination2 = mutableMarcherSolution2.endPos;
-                    if (newOption.swapMarchers != activeOption.swapMarchers) {
-                        SolverCoord tmp = destination1;
-                        destination1 = destination2;
-                        destination2 = tmp;
-                    }
+                        SolverCoord destination1 = mutableMarcherSolution1.endPos;
+                        SolverCoord destination2 = mutableMarcherSolution2.endPos;
+                        if (newOption.swapMarchers != activeOption.swapMarchers) {
+                            SolverCoord tmp = destination1;
+                            destination1 = destination2;
+                            destination2 = tmp;
+                        }
 
-                    recalculateMarcher(marcherMove1, mutableMarcherSolution1, instructionOptions[newOption.instructionForMarcher1], destination1);
-                    recalculateMarcher(marcherMove2, mutableMarcherSolution2, instructionOptions[newOption.instructionForMarcher2], destination2);
-                    badSolutionDuration = (marcherMove1.waitBeats + marcherMove1.numSteps.first + marcherMove1.numSteps.second > maxBeats) || (marcherMove2.waitBeats + marcherMove2.numSteps.first + marcherMove2.numSteps.second > maxBeats);
-                    badSolutionDestination = !destinationConstraints.destinationIsAllowed(col.firstMarcher, mutableMarcherSolution1.endPos) || !destinationConstraints.destinationIsAllowed(col.secondMarcher, mutableMarcherSolution2.endPos);
+                        recalculateMarcher(marcherMove1, mutableMarcherSolution1, instructionOptions[newOption.instructionForMarcher1], destination1);
+                        recalculateMarcher(marcherMove2, mutableMarcherSolution2, instructionOptions[newOption.instructionForMarcher2], destination2);
+                        badSolutionDuration = (marcherMove1.waitBeats + marcherMove1.numSteps.first + marcherMove1.numSteps.second > maxBeats) || (marcherMove2.waitBeats + marcherMove2.numSteps.first + marcherMove2.numSteps.second > maxBeats);
+                        badSolutionDestination = !destinationConstraints.destinationIsAllowed(col.firstMarcher, mutableMarcherSolution1.endPos) || !destinationConstraints.destinationIsAllowed(col.secondMarcher, mutableMarcherSolution2.endPos);
 
-                    activeOption = newOption;
-                    if ((badSolutionDuration || badSolutionDestination) && newOptionIndex != activeOptionIndex) {
-                        continue;
-                    }
+                        activeOption = newOption;
+                        if ((badSolutionDuration || badSolutionDestination) && newOptionIndex != activeOptionIndex) {
+                            continue;
+                        }
 
-                    collisionSpace.reinstructMarcher(col.firstMarcher, marcherMove1);
-                    collisionSpace.reinstructMarcher(col.secondMarcher, marcherMove2);
+                        collisionSpace.reinstructMarcher(col.firstMarcher, marcherMove1);
+                        collisionSpace.reinstructMarcher(col.secondMarcher, marcherMove2);
 
-                    allActiveOptions[{ col.firstMarcher, col.secondMarcher }] = newOptionIndex;
-                    marcherSolutions[col.firstMarcher] = mutableMarcherSolution1;
-                    marcherSolutions[col.secondMarcher] = mutableMarcherSolution2;
+                        allActiveOptions[{ col.firstMarcher, col.secondMarcher }] = newOptionIndex;
+                        marcherSolutions[col.firstMarcher] = mutableMarcherSolution1;
+                        marcherSolutions[col.secondMarcher] = mutableMarcherSolution2;
 
-                    if (executingFinalIteration) {
-                        break;
-                    }
+                        if (executingFinalIteration) {
+                            break;
+                        }
 
-                    // Track our improvement
-                    if (collisionSpace.collectCollisionPairs().size() <= bestNumCollisions) {
-                        bestNumCollisions = (unsigned)collisionSpace.collectCollisionPairs().size();
-                        bestOptionIndex = newOptionIndex;
+                        // Track our improvement
+                        if (collisionSpace.collectCollisionPairs().size() <= bestNumCollisions) {
+                            bestNumCollisions = (unsigned)collisionSpace.collectCollisionPairs().size();
+                            bestOptionIndex = newOptionIndex;
+                        }
                     }
                 }
             }
         }
-    }
+    };
 }
 
 #pragma mark - Algorithm By: Sover, Eliceiri, Hershkovitz
@@ -2029,12 +2030,12 @@ namespace e7NaminiaslRamirezZhang {
 
 namespace e7SoverEliceiriHershkovitz {
 
-    void iterateSolution(std::vector<MarcherSolution>& marcherSolutions, CollisionSpace& collisionSpace, unsigned maxBeats, const DestinationConstraints& destinationConstraints, const std::vector<TransitionSolverParams::MarcherInstruction>& instructionOptions, CalChart::TransitionSolverDelegate* delegate)
+    void iterateSolution(std::vector<MarcherSolution>& marcherSolutions, CollisionSpace& collisionSpace, unsigned maxBeats, const DestinationConstraints& destinationConstraints, const std::vector<TransitionSolverParams::MarcherInstruction>& instructionOptions, TransitionSolverDelegate* delegate)
     {
         // Prioritize commands in the order that we will be willing to give them to a marcher
         // We're much more willing to change direction than to increase the number of wait beats
-        std::vector<CalChart::TransitionSolverParams::MarcherInstruction> prioritizedInstructionOptions = instructionOptions;
-        auto comparator = [](const CalChart::TransitionSolverParams::MarcherInstruction& first, const CalChart::TransitionSolverParams::MarcherInstruction& second) {
+        std::vector<TransitionSolverParams::MarcherInstruction> prioritizedInstructionOptions = instructionOptions;
+        auto comparator = [](const TransitionSolverParams::MarcherInstruction& first, const TransitionSolverParams::MarcherInstruction& second) {
             if (first.waitBeats == second.waitBeats) {
                 return first.movementPattern < second.movementPattern;
             }
@@ -2053,7 +2054,7 @@ namespace e7SoverEliceiriHershkovitz {
         // Create an initial order for setting down our marchers
         std::vector<unsigned> marchOrder;
         for (unsigned i = 0; i < marcherSolutions.size(); i++) {
-            collisionSpace.disableMarcher(i);
+            marchOrder.push_back(i);
         }
 
         std::vector<unsigned> unplacedMarchers = marchOrder;
@@ -2089,8 +2090,8 @@ namespace e7SoverEliceiriHershkovitz {
 
                 unsigned triedInstructions;
                 for (triedInstructions = 0; triedInstructions < prioritizedInstructionOptions.size(); triedInstructions++) {
-                    CalChart::MovingMarcher newMoveInstructions;
-                    CalChart::e7ChiuZamoraMalani::recalculateMarcher(newMoveInstructions, marcherSolutions[marcher], prioritizedInstructionOptions[activeInstructions[marcher]], marcherSolutions[marcher].endPos);
+                    MovingMarcher newMoveInstructions;
+                    e7ChiuZamoraMalani::recalculateMarcher(newMoveInstructions, marcherSolutions[marcher], prioritizedInstructionOptions[activeInstructions[marcher]], marcherSolutions[marcher].endPos);
 
                     if (collisionSpace.collectCollisionPairs().size() == 0 && collisionSpace.getMarchersWithIncompleteTransitions().size() == 0) {
                         break;
@@ -2130,16 +2131,8 @@ namespace e7SoverEliceiriHershkovitz {
                 bestNumberOfUnplacedMarchers = (unsigned)unplacedMarchers.size();
                 numIterationsWithoutImprovement = 0;
             }
-        }
-
-        // Remove all of the marchers that need to be re-prioritized
-        {
-            auto unplacedIter = unplacedMarchers.begin();
-            for (auto marchersIter = marchOrder.begin(); marchersIter != marchOrder.end() && unplacedIter != unplacedMarchers.end(); marchersIter++) {
-                if (*marchersIter == *unplacedIter) {
-                    marchOrder.erase(marchersIter--);
-                    unplacedIter++;
-                }
+            if (numIterationsWithoutImprovement >= 10) {
+                break;
             }
         }
     };
@@ -2158,10 +2151,10 @@ std::vector<std::string> validateSheetForTransitionSolver(const CalChart::Sheet&
     // Verify that all points are in the grid, and that all of them can be converted to and from solver space
     for (unsigned i = 0; i < sheet.GetPoints().size(); i++) {
         CalChart::Coord showPosition;
-        CalChart::SolverCoord solverPosition;
+        SolverCoord solverPosition;
 
         showPosition = sheet.GetPoint(i).GetPos();
-        solverPosition = CalChart::SolverCoord::fromShowSpace(showPosition);
+        solverPosition = SolverCoord::fromShowSpace(showPosition);
 
         if (solverPosition.x % 2 != 0 || solverPosition.y % 2 != 0) {
             errors.push_back("Marcher " + std::to_string(i) + " is not located on a 2-step grid.");
@@ -2174,19 +2167,19 @@ std::vector<std::string> validateSheetForTransitionSolver(const CalChart::Sheet&
     return errors;
 }
 
-CalChart::TransitionSolverResult runSolverWithExplicitBeatCap(const CalChart::Sheet& sheet1, const CalChart::Sheet& sheet2, CalChart::TransitionSolverParams params, unsigned numBeats, CalChart::TransitionSolverDelegate* delegate)
+TransitionSolverResult runSolverWithExplicitBeatCap(const CalChart::Sheet& sheet1, const CalChart::Sheet& sheet2, TransitionSolverParams params, unsigned numBeats, TransitionSolverDelegate* delegate)
 {
 
-    CalChart::TransitionSolverResult results;
+    TransitionSolverResult results;
 
     // Convert the start and end locations of the stuntsheets so that they are represented in the SolverCoord coordinate system
-    std::vector<CalChart::SolverCoord> startPositions;
-    std::vector<CalChart::SolverCoord> endPositions;
+    std::vector<SolverCoord> startPositions;
+    std::vector<SolverCoord> endPositions;
     convertPositionsOnSheetToSolverSpace(sheet1, startPositions);
     convertPositionsOnSheetToSolverSpace(sheet2, endPositions);
 
-    auto fieldWidth = CalChart::SolverCoord::kFieldWidthInSteps;
-    auto fieldHeight = CalChart::SolverCoord::kFieldHeightInSteps;
+    auto fieldWidth = SolverCoord::kFieldWidthInSteps;
+    auto fieldHeight = SolverCoord::kFieldHeightInSteps;
     unsigned maxBeats = numBeats;
 
     // Scale the field and the transition duration by half, so that we can perform less calculations
@@ -2202,7 +2195,7 @@ CalChart::TransitionSolverResult runSolverWithExplicitBeatCap(const CalChart::Sh
     // This will minimize the distance travelled by our marchers (assuming they are moving either EWNS or NSEW) to get to the next stuntsheet, while assigning only one marcher to each destination
     // We will use this to assign reasonable destinations to each marcher to start
     Matrix<double> distances;
-    CalChart::DestinationConstraints destinationConstraints(params.groups, endPositions);
+    DestinationConstraints destinationConstraints(params.groups, endPositions);
     distances = makeHungarianDistanceMatrix(startPositions, endPositions, maxBeats);
 
     // Here, we take into account the constraints that were passed to us in the TransitionSolverParams
@@ -2227,11 +2220,11 @@ CalChart::TransitionSolverResult runSolverWithExplicitBeatCap(const CalChart::Sh
         }
     }
 
-    std::vector<CalChart::MarcherSolution> marcherSolutions(assignments.size());
+    std::vector<MarcherSolution> marcherSolutions(assignments.size());
 
-    CalChart::CollisionSpace collisionSpace(fieldWidth, fieldHeight, startPositions, maxBeats);
+    CollisionSpace collisionSpace(fieldWidth, fieldHeight, startPositions, maxBeats);
 
-    std::vector<CalChart::TransitionSolverParams::MarcherInstruction> instructionOptions;
+    std::vector<TransitionSolverParams::MarcherInstruction> instructionOptions;
     for (unsigned i = 0; i < params.availableInstructions.size(); i++) {
         if (params.availableInstructionsMask[i]) {
             instructionOptions.push_back(params.availableInstructions[i]);
@@ -2244,7 +2237,7 @@ CalChart::TransitionSolverResult runSolverWithExplicitBeatCap(const CalChart::Sh
         marcherSolutions[i].endPos = endPositions[assignments[i]];
         marcherSolutions[i].instruction = instructionOptions[0];
 
-        CalChart::MovingMarcher marcherAnim = calculateMovementFromSolution(marcherSolutions[i]);
+        MovingMarcher marcherAnim = calculateMovementFromSolution(marcherSolutions[i]);
         collisionSpace.reinstructMarcher((unsigned)i, marcherAnim);
     }
 
@@ -2252,8 +2245,8 @@ CalChart::TransitionSolverResult runSolverWithExplicitBeatCap(const CalChart::Sh
         delegate->OnSubtaskProgress(0);
     }
     switch (params.algorithm) {
-    case CalChart::TransitionSolverParams::AlgorithmIdentifier::E7_ALGORITHM__CHIU_ZAMORA_MALANI:
-        CalChart::e7ChiuZamoraMalani::iterateSolution(marcherSolutions, collisionSpace, maxBeats, destinationConstraints, instructionOptions, delegate);
+    case TransitionSolverParams::AlgorithmIdentifier::E7_ALGORITHM__CHIU_ZAMORA_MALANI:
+        e7ChiuZamoraMalani::iterateSolution(marcherSolutions, collisionSpace, maxBeats, destinationConstraints, instructionOptions, delegate);
         break;
     case TransitionSolverParams::AlgorithmIdentifier::E7_ALGORITHM__NAMINIASL_RAMIREZ_ZHANG:
         e7NaminiaslRamirezZhang::iterateSolution(marcherSolutions, collisionSpace, maxBeats, destinationConstraints, instructionOptions, delegate);

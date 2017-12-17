@@ -29,190 +29,215 @@
 #include "calchartapp.h"
 #include "calchartdoc.h"
 #include "cc_show.h"
+#include "animate.h"
+#include "animatecompile.h"
+#include "cont.h"
+#include "custom_listview.h"
+
+#include <regex>
 
 #include <wx/help.h>
 #include <wx/html/helpctrl.h>
 #include <wx/statline.h>
 #include <wx/msgdlg.h>
+#include <wx/dcbuffer.h>
 
-enum {
-    CALCHART__CONT_CLOSE = 100,
-    ContinuityEditor_ContEditSelect,
-    ContinuityEditor_Save,
-    ContinuityEditor_Discard,
-    ContinuityEditor_ContEditCurrent,
-    ContinuityEditor_KeyPress,
-};
+using namespace CalChart;
 
-BEGIN_EVENT_TABLE(ContinuityEditor, wxFrame)
-EVT_MENU(wxID_CLOSE, ContinuityEditor::OnCloseWindow)
-EVT_MENU(wxID_HELP, ContinuityEditor::OnCmdHelp)
-EVT_MENU(ContinuityEditor_ContEditSelect, ContinuityEditor::ContEditSelect)
-EVT_MENU(ContinuityEditor_Save, ContinuityEditor::OnSave)
-EVT_MENU(ContinuityEditor_Discard, ContinuityEditor::OnDiscard)
-EVT_BUTTON(wxID_CLOSE, ContinuityEditor::OnCloseWindow)
-EVT_BUTTON(wxID_HELP, ContinuityEditor::OnCmdHelp)
-EVT_BUTTON(ContinuityEditor_ContEditSelect, ContinuityEditor::ContEditSelect)
-EVT_BUTTON(ContinuityEditor_Save, ContinuityEditor::OnSave)
-EVT_BUTTON(ContinuityEditor_Discard, ContinuityEditor::OnDiscard)
-EVT_CHOICE(ContinuityEditor_ContEditCurrent, ContinuityEditor::ContEditCurrent)
-EVT_TEXT(ContinuityEditor_KeyPress, ContinuityEditor::OnKeyPress)
+BEGIN_EVENT_TABLE(ContinuityEditorCanvas, CustomListViewPanel)
+EVT_SET_FOCUS(ContinuityEditorCanvas::DoSetFocus)
+EVT_KILL_FOCUS(ContinuityEditorCanvas::DoKillFocus)
 END_EVENT_TABLE()
 
-ContinuityEditorView::ContinuityEditorView() {}
-ContinuityEditorView::~ContinuityEditorView() {}
-
-void ContinuityEditorView::OnDraw(wxDC* dc) {}
-void ContinuityEditorView::OnUpdate(wxView* sender, wxObject* hint)
+// Define a constructor for field canvas
+ContinuityEditorCanvas::ContinuityEditorCanvas(CalChartDoc* doc, SYMBOL_TYPE sym, CalChartConfiguration& config, wxWindow* parent)
+    : super(parent, wxID_ANY, wxDefaultPosition, wxSize{ 200, 200 })
+    , mDoc(doc)
+    , mSym(sym)
+    , mConfig(config)
 {
-    ContinuityEditor* editor = static_cast<ContinuityEditor*>(GetFrame());
-    if (hint && hint->IsKindOf(CLASSINFO(CalChartDoc_FlushAllViews))) {
-        editor->FlushText();
+}
+
+void ContinuityEditorCanvas::DoSetContinuity(CalChart::Continuity const& text)
+{
+    std::vector<std::unique_ptr<CustomListViewCell> > contCells;
+    mCont = text;
+    for (auto&& i : mCont.GetParsedContinuity()) {
+        contCells.emplace_back(std::make_unique<ContinuityEditorCell>(*i, mConfig));
+    }
+    SetContCells(std::move(contCells));
+    Refresh();
+}
+
+template <typename T>
+static auto do_cloning(T const& cont)
+{
+    std::vector<std::unique_ptr<ContProcedure> > copied_cont;
+    for (auto&& i : cont.GetParsedContinuity()) {
+        copied_cont.emplace_back(i->clone());
+    }
+    return copied_cont;
+}
+
+void ContinuityEditorCanvas::OnNewEntry(int cell)
+{
+    if (!mDoc)
+        return;
+    wxTextEntryDialog dialog(this,
+        wxEmptyString,
+        wxT("Enter new continuity"),
+        wxEmptyString,
+        wxOK | wxCANCEL);
+
+    if (dialog.ShowModal() != wxID_OK) {
+        return;
+    }
+    try {
+        // if we have -1, that means push_back.
+        auto copied_cont = do_cloning(mCont);
+        for (auto&& i : CalChart::Continuity::ParseContinuity(dialog.GetValue().ToStdString())) {
+            copied_cont.insert(copied_cont.begin() + cell++, std::move(i));
+        }
+        UpdateCont(CalChart::Continuity{ std::move(copied_cont) });
+    }
+    catch (std::runtime_error const& e) {
+        wxMessageBox(wxT("Error: ") + wxString{ e.what() }, wxT("Parsing Error"), wxOK | wxICON_INFORMATION, this);
+        return;
+    }
+}
+
+void ContinuityEditorCanvas::OnDeleteEntry(int cell)
+{
+    if (!mDoc)
+        return;
+    // make a copy, then delete it, then set as new continuity:
+    if (cell < static_cast<int>(mCont.GetParsedContinuity().size())) {
+        auto copied_cont = do_cloning(mCont);
+        copied_cont.erase(copied_cont.begin() + cell);
+        UpdateCont(CalChart::Continuity{ std::move(copied_cont) });
+    }
+}
+
+void ContinuityEditorCanvas::OnMoveEntry(int start_cell, int end_cell)
+{
+    auto copied_cont = do_cloning(mCont);
+    if (start_cell < end_cell) {
+        auto end = end_cell >= static_cast<int>(copied_cont.size()) ? copied_cont.end() : copied_cont.begin() + end_cell + 1;
+        std::rotate(copied_cont.begin() + start_cell, copied_cont.begin() + start_cell + 1, end);
     }
     else {
-        editor->Update();
+        auto end = copied_cont.begin() + start_cell + 1;
+        std::rotate(copied_cont.begin() + end_cell, copied_cont.begin() + start_cell, end);
     }
+    UpdateCont(CalChart::Continuity{ std::move(copied_cont) });
 }
 
-void ContinuityEditorView::DoSetContinuityText(SYMBOL_TYPE which,
-    const wxString& text)
+void ContinuityEditorCanvas::UpdateCont(Continuity const& new_cont)
 {
-    auto cmd = static_cast<CalChartDoc*>(GetDocument())->Create_SetContinuityTextCommand(which, text);
-    GetDocument()->GetCommandProcessor()->Submit(cmd.release());
+    if (!mDoc)
+        return;
+    auto cmd = mDoc->Create_SetContinuityCommand(mSym, new_cont);
+    mDoc->GetCommandProcessor()->Submit(cmd.release());
 }
 
-ContinuityEditor::ContinuityEditor() { Init(); }
-
-ContinuityEditor::ContinuityEditor(CalChartDoc* show, wxWindow* parent,
-    wxWindowID id, const wxString& caption,
-    const wxPoint& pos, const wxSize& size,
-    long style)
+void ContinuityEditorCanvas::DoSetFocus(wxFocusEvent& event)
 {
-    Init();
-
-    Create(show, parent, id, caption, pos, size, style);
+    if (!mDoc)
+        return;
+    auto&& sht = mDoc->GetCurrentSheet();
+    mDoc->SetSelection(sht->MakeSelectPointsBySymbol(mSym));
 }
 
-void ContinuityEditor::Init() {}
-
-bool ContinuityEditor::Create(CalChartDoc* show, wxWindow* parent,
-    wxWindowID id, const wxString& caption,
-    const wxPoint& pos, const wxSize& size,
-    long style)
+void ContinuityEditorCanvas::DoKillFocus(wxFocusEvent& event)
 {
-    if (!wxFrame::Create(parent, id, caption, pos, size, style))
-        return false;
-
-    mDoc = show;
-    mCurrentContinuityChoice = 0;
-    mView = new ContinuityEditorView;
-    mView->SetDocument(show);
-    mView->SetFrame(this);
-
-    CreateControls();
-
-    // This fits the dalog to the minimum size dictated by the sizers
-    GetSizer()->Fit(this);
-    // This ensures that the dialog cannot be smaller than the minimum size
-    GetSizer()->SetSizeHints(this);
-
-    Center();
-
-    // now update the current screen
-    Update();
-
-    return true;
+    SetSelection(-1);
 }
 
-void ContinuityEditor::CreateControls()
+// a panel consists of the name, canvas
+class ContinuityEditorPerCont : public wxPanel {
+    using super = wxPanel;
+
+public:
+    ContinuityEditorPerCont(CalChartDoc* doc, SYMBOL_TYPE sym, wxWindow* parent);
+    virtual ~ContinuityEditorPerCont() = default;
+
+    void DoSetContinuity(Continuity const& new_cont);
+
+private:
+    ContinuityEditorCanvas* mCanvas;
+};
+
+ContinuityEditorPerCont::ContinuityEditorPerCont(CalChartDoc* doc, SYMBOL_TYPE sym, wxWindow* parent)
+    : wxPanel(parent)
 {
-    // menu bar
-    wxMenu* cont_menu = new wxMenu;
-    cont_menu->Append(ContinuityEditor_Save, wxT("&Save Continuity\tCTRL-S"),
-        wxT("Save continuity"));
-    cont_menu->Append(ContinuityEditor_ContEditSelect,
-        wxT("Select &Points\tCTRL-P"), wxT("Select Points"));
-    cont_menu->Append(wxID_CLOSE, wxT("Close Window\tCTRL-W"),
-        wxT("Close this window"));
-
-    wxMenu* help_menu = new wxMenu;
-    help_menu->Append(wxID_HELP, wxT("&Help on Continuity...\tCTRL-H"),
-        wxT("Help on Continuity"));
-
-    wxMenuBar* menu_bar = new wxMenuBar;
-    menu_bar->Append(cont_menu, wxT("&File"));
-    menu_bar->Append(help_menu, wxT("&Help"));
-    SetMenuBar(menu_bar);
-
-    // create a sizer for laying things out top down:
-    wxBoxSizer* topsizer = new wxBoxSizer(wxVERTICAL);
+    auto topsizer = new wxBoxSizer(wxVERTICAL);
     SetSizer(topsizer);
 
-    // add buttons to the top row
-    // New, delete, choices
-    wxBoxSizer* top_button_sizer = new wxBoxSizer(wxHORIZONTAL);
-    mContinuityChoices = new wxChoice(this, ContinuityEditor_ContEditCurrent);
-    top_button_sizer->Add(mContinuityChoices, 0, wxALIGN_CENTER_VERTICAL | wxALL,
-        5);
+    auto staticText = new wxStaticText(this, wxID_STATIC, GetNameForSymbol(sym), wxDefaultPosition, wxDefaultSize, wxALIGN_LEFT);
+    topsizer->Add(staticText, 0, wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
 
-    // select
-    wxButton* button = new wxButton(this, ContinuityEditor_ContEditSelect,
-        wxT("Select &Points"));
-    top_button_sizer->Add(button, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
-    topsizer->Add(top_button_sizer);
+    // here's a canvas
+    mCanvas = new ContinuityEditorCanvas(doc, sym, CalChartConfiguration::GetGlobalConfig(), this);
+    topsizer->Add(mCanvas, 1, wxEXPAND);
+    topsizer->Add(new wxStaticLine(this, wxID_STATIC, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL), 0, wxGROW | wxALL, 5);
+}
 
-    mUserInput = new FancyTextWin(this, ContinuityEditor_KeyPress, wxEmptyString,
-        wxDefaultPosition, wxSize(50, 300));
+void ContinuityEditorPerCont::DoSetContinuity(CalChart::Continuity const& text)
+{
+    mCanvas->DoSetContinuity(text);
+}
 
-    topsizer->Add(mUserInput, 0, wxGROW | wxALL, 5);
+// View for linking CalChartDoc with ContinuityEditor
+class ContinuityEditorView : public wxView {
+public:
+    ContinuityEditorView() = default;
+    virtual ~ContinuityEditorView() = default;
+    virtual void OnDraw(wxDC* dc) {}
+    virtual void OnUpdate(wxView* sender, wxObject* hint = (wxObject*)NULL);
+};
+
+void ContinuityEditorView::OnUpdate(wxView* sender, wxObject* hint)
+{
+    dynamic_cast<ContinuityEditor*>(GetFrame())->Update();
+}
+
+BEGIN_EVENT_TABLE(ContinuityEditor, wxScrolledWindow)
+EVT_BUTTON(wxID_HELP, ContinuityEditor::OnCmdHelp)
+END_EVENT_TABLE()
+
+ContinuityEditor::ContinuityEditor(CalChartDoc* doc, wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size)
+    : wxScrolledWindow(parent, id, pos, size)
+    , mDoc(doc)
+{
+    mView = std::make_unique<ContinuityEditorView>();
+    mView->SetDocument(doc);
+    mView->SetFrame(this);
+
+    // create a sizer for laying things out top down:
+    auto topsizer = new wxBoxSizer(wxVERTICAL);
+    SetSizer(topsizer);
 
     // add a horizontal bar to make things clear:
-    wxStaticLine* line = new wxStaticLine(this, wxID_STATIC, wxDefaultPosition,
-        wxDefaultSize, wxLI_HORIZONTAL);
-    topsizer->Add(line, 0, wxGROW | wxALL, 5);
+    topsizer->Add(new wxStaticLine(this, wxID_STATIC, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL), 0, wxGROW | wxALL, 5);
 
-    // add a save, discard, close, and help
-    top_button_sizer = new wxBoxSizer(wxHORIZONTAL);
-    button = new wxButton(this, ContinuityEditor_Save, wxT("&Save"));
-    top_button_sizer->Add(button, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
-    button = new wxButton(this, ContinuityEditor_Discard, wxT("&Discard"));
-    top_button_sizer->Add(button, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
-    button = new wxButton(this, wxID_CLOSE, wxT("Close"));
-    top_button_sizer->Add(button, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
-    button = new wxButton(this, wxID_HELP, wxT("&Help"));
-    top_button_sizer->Add(button, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
-    topsizer->Add(top_button_sizer);
-}
-
-ContinuityEditor::~ContinuityEditor()
-{
-    if (mView)
-        delete mView;
-}
-
-void ContinuityEditor::OnCloseWindow(wxCommandEvent& event)
-{
-    // if the current field is modified, then do something
-    if (mUserInput->IsModified()) {
-        // give the user a chance to save, discard, or cancle the action
-        int userchoice = wxMessageBox(wxT("Continuity modified.  Save changes or cancel?"),
-            wxT("Save changes?"), wxYES_NO | wxCANCEL);
-        if (userchoice == wxYES) {
-            Save();
-        }
-        if (userchoice == wxNO) {
-            Discard();
-        }
-        if (userchoice == wxCANCEL) {
-            wxString message = wxT("Close cancelled.");
-            wxMessageBox(message, message);
-            return;
-        }
+    // we lay things out from top to bottom, saying what point we're dealing with, then the continuity
+    for (auto& eachcont : k_symbols) {
+        mPerCont.push_back(new ContinuityEditorPerCont(doc, eachcont, this));
+        topsizer->Add(mPerCont.back(), 0, wxGROW | wxALL, 5);
+        mPerCont.back()->Show(false);
     }
 
-    FlushText();
-    Close();
+    // add a save, discard, close, and help
+    auto top_button_sizer = new wxBoxSizer(wxHORIZONTAL);
+    top_button_sizer->Add(new wxButton(this, wxID_HELP, wxT("&Help")), 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+    topsizer->Add(top_button_sizer);
+
+    SetScrollRate(5, 5);
+    // now update the current screen
+    Update();
 }
+
+ContinuityEditor::~ContinuityEditor() = default;
 
 void ContinuityEditor::OnCmdHelp(wxCommandEvent& event)
 {
@@ -224,115 +249,14 @@ void ContinuityEditor::Update()
 {
     auto sht = mDoc->GetCurrentSheet();
 
-    mContinuityChoices->Clear();
-    for (auto& curranimcont : k_symbols) {
-        if (sht->ContinuityInUse(curranimcont)) {
-            mContinuityChoices->Append(CalChart::GetNameForSymbol(curranimcont));
-        }
+    for (auto i = 0ul; i < sizeof(k_symbols) / sizeof(k_symbols[0]); ++i) {
+        mPerCont.at(i)->Show(sht->ContinuityInUse(k_symbols[i]));
+        mPerCont.at(i)->DoSetContinuity(sht->GetContinuityBySymbol(k_symbols[i]));
     }
-    if (mCurrentContinuityChoice >= mContinuityChoices->GetCount() && mContinuityChoices->GetCount() > 0)
-        mCurrentContinuityChoice = mContinuityChoices->GetCount() - 1;
-    mContinuityChoices->SetSelection(mCurrentContinuityChoice);
-    UpdateText();
+    GetSizer()->FitInside(this);
 }
 
-void ContinuityEditor::SetInsertionPoint(int x, int y)
+void ContinuityEditor::OnChar(wxKeyEvent& event)
 {
-    mUserInput->SetInsertionPoint(
-        mUserInput->XYToPosition((long)x - 1, (long)y - 1));
-    mUserInput->SetFocus();
-}
-
-SYMBOL_TYPE ContinuityEditor::CurrentSymbolChoice() const
-{
-    auto name = mContinuityChoices->GetString(mCurrentContinuityChoice);
-    return CalChart::GetSymbolForName(name.ToStdString());
-}
-
-void ContinuityEditor::UpdateText()
-{
-    mUserInput->Clear();
-    auto current_sheet = mDoc->GetCurrentSheet();
-    auto& c = current_sheet->GetContinuityBySymbol(CurrentSymbolChoice());
-    if (!c.GetText().empty()) {
-        mUserInput->WriteText(c.GetText());
-        mUserInput->SetInsertionPoint(0);
-    }
-    mUserInput->DiscardEdits();
-    // disable the save and discard buttons as they are not active.
-    wxButton* button = (wxButton*)FindWindow(ContinuityEditor_Save);
-    button->Disable();
-    button = (wxButton*)FindWindow(ContinuityEditor_Discard);
-    button->Disable();
-}
-
-// flush out the text to the show.  This will treat the text box as unedited
-// it is assumed that the user has already been notified that this will modify
-// the show
-void ContinuityEditor::FlushText()
-{
-    wxString conttext;
-
-    conttext = mUserInput->GetValue();
-    auto current_sheet = mDoc->GetCurrentSheet();
-    auto& cont = current_sheet->GetContinuityBySymbol(CurrentSymbolChoice());
-    if (conttext != cont.GetText()) {
-        mView->DoSetContinuityText(CurrentSymbolChoice(), conttext);
-    }
-    mUserInput->DiscardEdits();
-}
-
-void ContinuityEditor::SetCurrent(unsigned i)
-{
-    mCurrentContinuityChoice = i;
-    if (mCurrentContinuityChoice >= mContinuityChoices->GetCount()) {
-        mCurrentContinuityChoice = mContinuityChoices->GetCount() - 1;
-    }
-    mContinuityChoices->SetSelection(mCurrentContinuityChoice);
-    UpdateText();
-}
-
-void ContinuityEditor::ContEditSelect(wxCommandEvent&)
-{
-    auto sht = mDoc->GetCurrentSheet();
-    mDoc->SetSelection(sht->MakeSelectPointsBySymbol(CurrentSymbolChoice()));
-}
-
-void ContinuityEditor::OnSave(wxCommandEvent&) { Save(); }
-
-void ContinuityEditor::Save() { FlushText(); }
-
-void ContinuityEditor::OnDiscard(wxCommandEvent&) { Discard(); }
-
-void ContinuityEditor::Discard() { UpdateText(); }
-
-void ContinuityEditor::ContEditCurrent(wxCommandEvent&)
-{
-    // which value did we choose
-    int newSelection = mContinuityChoices->GetSelection();
-    // if the current field is modified, then do something
-    if (mUserInput->IsModified()) {
-        // give the user a chance to save, discard, or cancle the action
-        int userchoice = wxMessageBox(wxT("Continuity modified.  Save changes or cancel?"),
-            wxT("Save changes?"), wxYES_NO | wxCANCEL);
-        if (userchoice == wxYES) {
-            Save();
-        }
-        if (userchoice == wxNO) {
-            Discard();
-        }
-        if (userchoice == wxCANCEL) {
-            mContinuityChoices->SetSelection(mCurrentContinuityChoice);
-            return;
-        }
-    }
-    SetCurrent(newSelection);
-}
-
-void ContinuityEditor::OnKeyPress(wxCommandEvent&)
-{
-    wxButton* button = (wxButton*)FindWindow(ContinuityEditor_Save);
-    button->Enable();
-    button = (wxButton*)FindWindow(ContinuityEditor_Discard);
-    button->Enable();
+    event.Skip();
 }

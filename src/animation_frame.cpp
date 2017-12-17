@@ -28,6 +28,7 @@
 #include "basic_ui.h"
 #include "confgr.h"
 #include "calchartdoc.h"
+#include "cc_continuity.h"
 
 #include <wx/timer.h>
 #include <wx/splitter.h>

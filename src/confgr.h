@@ -196,6 +196,11 @@ private:                                           \
     DECLARE_CONFIGURATION_FUNCTIONS(CommandUndoSetSheet, bool);
     DECLARE_CONFIGURATION_FUNCTIONS(CommandUndoSelection, bool);
 
+    DECLARE_CONFIGURATION_FUNCTIONS(ContCellFontSize, long);
+    DECLARE_CONFIGURATION_FUNCTIONS(ContCellRounding, long);
+    DECLARE_CONFIGURATION_FUNCTIONS(ContCellTextPadding, long);
+    DECLARE_CONFIGURATION_FUNCTIONS(ContCellBoxPadding, long);
+
 public:
     // helpers for displaying different config attributes
     std::vector<wxString> GetColorNames() const;

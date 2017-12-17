@@ -557,11 +557,11 @@ std::unique_ptr<wxCommand> CalChartDoc::Create_SetSymbolCommand(SYMBOL_TYPE sym)
     return std::make_unique<CalChartDocCommand>(*this, wxT("Setting Continuity Symbol"), cmds);
 }
 
-std::unique_ptr<wxCommand> CalChartDoc::Create_SetContinuityTextCommand(SYMBOL_TYPE i, const wxString& text)
+std::unique_ptr<wxCommand> CalChartDoc::Create_SetContinuityCommand(SYMBOL_TYPE i, CalChart::Continuity const& new_cont)
 {
     auto cmds = Create_SetSheetAndSelectionPair();
-    cmds.emplace_back(Inject_CalChartDocArg(mShow->Create_SetContinuityTextCommand(i, text.ToStdString())));
-    return std::make_unique<CalChartDocCommand>(*this, wxT("Setting Continuity Text"), cmds);
+    cmds.emplace_back(Inject_CalChartDocArg(mShow->Create_SetContinuityCommand(i, new_cont)));
+    return std::make_unique<CalChartDocCommand>(*this, wxT("Setting Continuity"), cmds);
 }
 
 std::unique_ptr<wxCommand> CalChartDoc::Create_SetLabelRightCommand(bool right)
@@ -613,51 +613,44 @@ std::unique_ptr<wxCommand> CalChartDoc::Create_MoveBackgroundImageCommand(int wh
     return std::make_unique<CalChartDocCommand>(*this, wxT("Moving Background Image"), cmds);
 }
 
-std::unique_ptr<wxCommand> CalChartDoc::Create_SetTransitionCommand(const std::vector<Coord> &finalPositions, const std::map<SYMBOL_TYPE, std::string> &continuities, const std::vector<SYMBOL_TYPE> &marcherDotTypes)
+std::unique_ptr<wxCommand> CalChartDoc::Create_SetTransitionCommand(const std::vector<Coord>& finalPositions, const std::map<SYMBOL_TYPE, std::string>& continuities, const std::vector<SYMBOL_TYPE>& marcherDotTypes)
 {
-    std::map<int, Coord>    positionAssignments;
-    
-    for (unsigned marcher = 0; marcher < finalPositions.size(); marcher++)
-    {
+    std::map<int, Coord> positionAssignments;
+
+    for (unsigned marcher = 0; marcher < finalPositions.size(); marcher++) {
         positionAssignments[marcher] = finalPositions.at(marcher);
     }
-    
+
     auto cmds = Create_SetSheetAndSelectionPair();
-    
+
     cmds.emplace_back(Inject_CalChartDocArg(mShow->Create_MovePointsCommand(GetCurrentSheetNum() + 1, positionAssignments, 0)));
-    
-    for (auto contIter = continuities.begin(); contIter != continuities.end(); contIter++)
-    {
-        cmds.emplace_back(Inject_CalChartDocArg(mShow->Create_SetContinuityTextCommand(contIter->first, contIter->second)));
+
+    for (auto contIter = continuities.begin(); contIter != continuities.end(); contIter++) {
+        cmds.emplace_back(Inject_CalChartDocArg(mShow->Create_SetContinuityCommand(contIter->first, CalChart::Continuity{ contIter->second })));
     }
-    
+
     std::set<SYMBOL_TYPE> processedSymbols;
-    for (unsigned firstMarcherWithSymbol = 0; firstMarcherWithSymbol < marcherDotTypes.size(); firstMarcherWithSymbol++)
-    {
-        SelectionList           marchersWithSymbol;
-        SYMBOL_TYPE             symbolToProcess;
-        
+    for (unsigned firstMarcherWithSymbol = 0; firstMarcherWithSymbol < marcherDotTypes.size(); firstMarcherWithSymbol++) {
+        SelectionList marchersWithSymbol;
+        SYMBOL_TYPE symbolToProcess;
+
         symbolToProcess = marcherDotTypes.at(firstMarcherWithSymbol);
-        
-        if (processedSymbols.find(symbolToProcess) != processedSymbols.end())
-        {
+
+        if (processedSymbols.find(symbolToProcess) != processedSymbols.end()) {
             continue; // Skip any symbols that we've already processed
         }
-        else
-        {
+        else {
             processedSymbols.insert(symbolToProcess);
         }
-        
-        for (unsigned marcher = firstMarcherWithSymbol; marcher < marcherDotTypes.size(); marcher++)
-        {
-            if (marcherDotTypes.at(marcher) == symbolToProcess)
-            {
+
+        for (unsigned marcher = firstMarcherWithSymbol; marcher < marcherDotTypes.size(); marcher++) {
+            if (marcherDotTypes.at(marcher) == symbolToProcess) {
                 marchersWithSymbol.insert(marcher);
             }
         }
-        
+
         cmds.emplace_back(Inject_CalChartDocArg(mShow->Create_SetSymbolCommand(marchersWithSymbol, symbolToProcess)));
     }
-    
+
     return std::make_unique<CalChartDocCommand>(*this, wxT("Setting Transition"), cmds);
 }

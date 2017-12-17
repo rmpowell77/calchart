@@ -222,6 +222,12 @@
 		E8A9B74C1FDD95D70080015A /* cc_point_test.mm in Sources */ = {isa = PBXBuildFile; fileRef = E8A9B7491FDD95D70080015A /* cc_point_test.mm */; };
 		E8A9B74D1FDD95D70080015A /* cc_coord_test.mm in Sources */ = {isa = PBXBuildFile; fileRef = E8A9B74A1FDD95D70080015A /* cc_coord_test.mm */; };
 		E8A9B74E1FDD95D70080015A /* cc_continuity_test.mm in Sources */ = {isa = PBXBuildFile; fileRef = E8A9B74B1FDD95D70080015A /* cc_continuity_test.mm */; };
+		E8AA4EA21FEE2B7C00789DF7 /* libboost_serialization-mt.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = E8AA4EA11FEE2B7C00789DF7 /* libboost_serialization-mt.dylib */; };
+		E8AA4EA31FEE2C1700789DF7 /* libboost_serialization-mt.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = E8AA4EA11FEE2B7C00789DF7 /* libboost_serialization-mt.dylib */; };
+		E8AA4EA41FEE2C2B00789DF7 /* libboost_serialization-mt.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = E8AA4EA11FEE2B7C00789DF7 /* libboost_serialization-mt.dylib */; };
+		E8AA4EA71FF0426700789DF7 /* custom_listview.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E8AA4EA51FF0425700789DF7 /* custom_listview.cpp */; };
+		E8AA4EAA1FF2A3C800789DF7 /* field_frame_controls.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E8AA4EA91FF2A2ED00789DF7 /* field_frame_controls.cpp */; };
+		E8AA4EAD1FF2F27900789DF7 /* cont_ui_cell.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E8AA4EAB1FF2F22500789DF7 /* cont_ui_cell.cpp */; };
 		E8B89DDD186F7C50004DE7DF /* print_cont_ui.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E8B89DDB186F7C50004DE7DF /* print_cont_ui.cpp */; };
 		E8C5F7821FDC67BA00C84D3E /* animate.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E884F39E17A631AD00831301 /* animate.cpp */; };
 		E8C5F7841FDC67BA00C84D3E /* animatecommand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E813C4A817A7886100705836 /* animatecommand.cpp */; };
@@ -726,6 +732,13 @@
 		E8A9B7491FDD95D70080015A /* cc_point_test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cc_point_test.mm; sourceTree = "<group>"; };
 		E8A9B74A1FDD95D70080015A /* cc_coord_test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cc_coord_test.mm; sourceTree = "<group>"; };
 		E8A9B74B1FDD95D70080015A /* cc_continuity_test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cc_continuity_test.mm; sourceTree = "<group>"; };
+		E8AA4EA11FEE2B7C00789DF7 /* libboost_serialization-mt.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libboost_serialization-mt.dylib"; path = "../../../../../opt/local/lib/libboost_serialization-mt.dylib"; sourceTree = "<group>"; };
+		E8AA4EA51FF0425700789DF7 /* custom_listview.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = custom_listview.cpp; sourceTree = "<group>"; };
+		E8AA4EA61FF0425800789DF7 /* custom_listview.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = custom_listview.h; sourceTree = "<group>"; };
+		E8AA4EA81FF2A2ED00789DF7 /* field_frame_controls.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = field_frame_controls.h; sourceTree = "<group>"; };
+		E8AA4EA91FF2A2ED00789DF7 /* field_frame_controls.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = field_frame_controls.cpp; sourceTree = "<group>"; };
+		E8AA4EAB1FF2F22500789DF7 /* cont_ui_cell.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = cont_ui_cell.cpp; sourceTree = "<group>"; };
+		E8AA4EAC1FF2F22500789DF7 /* cont_ui_cell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cont_ui_cell.h; sourceTree = "<group>"; };
 		E8B89DD8186F5655004DE7DF /* cc_text.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = cc_text.cpp; sourceTree = "<group>"; };
 		E8B89DDB186F7C50004DE7DF /* print_cont_ui.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = print_cont_ui.cpp; sourceTree = "<group>"; };
 		E8B89DDC186F7C50004DE7DF /* print_cont_ui.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = print_cont_ui.h; sourceTree = "<group>"; };
@@ -754,6 +767,7 @@
 				C7C5FBD41479B367004E5C5B /* Carbon.framework in Frameworks */,
 				C7C5FBD21479B356004E5C5B /* IOKit.framework in Frameworks */,
 				8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */,
+				E8AA4EA21FEE2B7C00789DF7 /* libboost_serialization-mt.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -761,6 +775,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E8AA4EA31FEE2C1700789DF7 /* libboost_serialization-mt.dylib in Frameworks */,
 				E8C5F7B51FDC693300C84D3E /* libcalchart_core.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -776,6 +791,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E8AA4EA41FEE2C2B00789DF7 /* libboost_serialization-mt.dylib in Frameworks */,
 				E8C5F7C61FDC6EE100C84D3E /* libcalchart_core.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -848,6 +864,7 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				E8AA4EA11FEE2B7C00789DF7 /* libboost_serialization-mt.dylib */,
 				1058C7A0FEA54F0111CA2CBB /* Linked Frameworks */,
 				1058C7A2FEA54F0111CA2CBB /* Other Frameworks */,
 			);
@@ -997,10 +1014,14 @@
 				C7A8451B1398E8D5003AD23E /* cc_preferences_ui.h */,
 				C7AFA973117A6DBA00CC53E2 /* confgr.cpp */,
 				C7AFA974117A6DBA00CC53E2 /* confgr.h */,
+				E8AA4EAB1FF2F22500789DF7 /* cont_ui_cell.cpp */,
+				E8AA4EAC1FF2F22500789DF7 /* cont_ui_cell.h */,
 				C7AFA977117A6DBA00CC53E2 /* cont_ui.cpp */,
 				C7AFA978117A6DBA00CC53E2 /* cont_ui.h */,
 				C7AFA979117A6DBA00CC53E2 /* contgram.y */,
 				C7AFA97A117A6DBA00CC53E2 /* contscan.l */,
+				E8AA4EA51FF0425700789DF7 /* custom_listview.cpp */,
+				E8AA4EA61FF0425800789DF7 /* custom_listview.h */,
 				C7AFA97B117A6DBA00CC53E2 /* draw.cpp */,
 				E884F3A217A631BB00831301 /* draw.h */,
 				E803A0C7193BA54900C5F2D5 /* draw_utils.h */,
@@ -1012,6 +1033,8 @@
 				C7E047CB155F7B8A00D8C71B /* field_canvas.h */,
 				C7E047CD155F892400D8C71B /* field_frame.cpp */,
 				C7E047CE155F892400D8C71B /* field_frame.h */,
+				E8AA4EA91FF2A2ED00789DF7 /* field_frame_controls.cpp */,
+				E8AA4EA81FF2A2ED00789DF7 /* field_frame_controls.h */,
 				C7E047C6155F279000D8C71B /* field_view.cpp */,
 				C7E047C7155F279000D8C71B /* field_view.h */,
 				E8E2E1051962870B002453E8 /* ghost_module.cpp */,
@@ -1396,6 +1419,7 @@
 			files = (
 				C7AFA990117A6DBA00CC53E2 /* basic_ui.cpp in Sources */,
 				E8C5F7B81FDC6A3200C84D3E /* e7_transition_solver_ui.cpp in Sources */,
+				E8AA4EAA1FF2A3C800789DF7 /* field_frame_controls.cpp in Sources */,
 				C7AFA992117A6DBA00CC53E2 /* confgr.cpp in Sources */,
 				C7AFA994117A6DBA00CC53E2 /* cont_ui.cpp in Sources */,
 				C7AFA997117A6DBA00CC53E2 /* draw.cpp in Sources */,
@@ -1403,6 +1427,8 @@
 				C7D4E2C411D087CD007D3587 /* calchartapp.cpp in Sources */,
 				E8E2E10B19628731002453E8 /* ghost_module.cpp in Sources */,
 				C7A845091398E7D8003AD23E /* cc_command.cpp in Sources */,
+				E8AA4EA71FF0426700789DF7 /* custom_listview.cpp in Sources */,
+				E8AA4EAD1FF2F27900789DF7 /* cont_ui_cell.cpp in Sources */,
 				C7A8451C1398E8D5003AD23E /* cc_preferences_ui.cpp in Sources */,
 				C72E2B091441150400118C03 /* top_frame.cpp in Sources */,
 				C7B669761474E20300E28B63 /* background_image.cpp in Sources */,
@@ -1534,10 +1560,15 @@
 					"/usr/local/lib/wx/include/osx_cocoa-unicode-static-3.1",
 					"/usr/local/include/wx-3.1",
 					/opt/local/include,
+					"$(inherited)",
 				);
 				INFOPLIST_FILE = "CalChart-Info.plist";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/usr/local/lib,
+					/opt/local/lib,
+				);
 				OTHER_LDFLAGS = (
-					"-L/usr/local/lib",
 					"-lwx_osx_cocoau_gl-3.1",
 					"-lwx_osx_cocoau_xrc-3.1",
 					"-lwx_osx_cocoau_qa-3.1",
@@ -1579,10 +1610,15 @@
 					"/usr/local/lib/wx/include/osx_cocoa-unicode-static-3.1",
 					"/usr/local/include/wx-3.1",
 					/opt/local/include,
+					"$(inherited)",
 				);
 				INFOPLIST_FILE = "CalChart-Info.plist";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/usr/local/lib,
+					/opt/local/lib,
+				);
 				OTHER_LDFLAGS = (
-					"-L/usr/local/lib",
 					"-lwx_osx_cocoau_gl-3.1",
 					"-lwx_osx_cocoau_xrc-3.1",
 					"-lwx_osx_cocoau_qa-3.1",
@@ -1621,12 +1657,12 @@
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CURRENT_PROJECT_VERSION = 3.4.4;
+				CURRENT_PROJECT_VERSION = 3.6.0;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
 				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_SIGN_COMPARE = YES;
@@ -1634,6 +1670,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = /opt/local/include;
+				LIBRARY_SEARCH_PATHS = /usr/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
@@ -1656,11 +1694,11 @@
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CURRENT_PROJECT_VERSION = 3.4.4;
+				CURRENT_PROJECT_VERSION = 3.6.0;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
 				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_SIGN_COMPARE = YES;
@@ -1668,6 +1706,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = /opt/local/include;
+				LIBRARY_SEARCH_PATHS = /usr/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				SDKROOT = macosx;
 				WARNING_CFLAGS = "-Wall";
@@ -1696,6 +1736,10 @@
 					"DEBUG=1",
 					"$(inherited)",
 				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/opt/local/lib,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -1704,6 +1748,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COPY_PHASE_STRIP = YES;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/opt/local/lib,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -1717,7 +1765,6 @@
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
@@ -1737,7 +1784,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				HEADER_SEARCH_PATHS = (
 					../resources,
-					/opt/local/include,
+					"$(inherited)",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -1752,7 +1799,6 @@
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
@@ -1767,7 +1813,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				HEADER_SEARCH_PATHS = (
 					../resources,
-					/opt/local/include,
+					"$(inherited)",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -1785,7 +1831,6 @@
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
@@ -1807,6 +1852,10 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				INFOPLIST_FILE = calchart_core_tests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/opt/local/lib,
+				);
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "calband.calchart-core-tests";
@@ -1826,7 +1875,6 @@
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
@@ -1843,6 +1891,10 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				INFOPLIST_FILE = calchart_core_tests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/opt/local/lib,
+				);
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = "calband.calchart-core-tests";

@@ -1,3 +1,9 @@
+#pragma once
+/*
+ * cont_ui_cell.h
+ * Header for continuity editor cell
+ */
+
 /*
    Copyright (C) 1995-2011  Garrick Brian Meeker, Richard Michael Powell
 
@@ -15,18 +21,22 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef CC_VERSION
+#include "custom_listview.h"
 
-#define CC_MAJOR_VERSION 3
-#define CC_MINOR_VERSION 6
-#define CC_SUB_MINOR_VERSION 0
+class CalChartConfiguration;
+namespace CalChart {
+class ContProcedure;
+}
 
-#define STRINGIZE_HELPER(name) #name
-#define STRINGIZE(x) STRINGIZE_HELPER(x)
+class ContinuityEditorCell : public CustomListViewCell {
+public:
+    ContinuityEditorCell(CalChart::ContProcedure& proc, CalChartConfiguration const& config);
+    virtual ~ContinuityEditorCell() = default;
+    virtual void DrawToDC(wxDC& dc) override;
+    virtual int Height() const override;
+    virtual int Width() const override;
 
-#define MK_CC_VERSION(major, minor, subminor) \
-    "v" STRINGIZE(major) "." STRINGIZE(minor) "." STRINGIZE(subminor)
-#define CC_VERSION \
-    MK_CC_VERSION(CC_MAJOR_VERSION, CC_MINOR_VERSION, CC_SUB_MINOR_VERSION)
-
-#endif
+private:
+    CalChart::ContProcedure& mProc;
+    CalChartConfiguration const& mConfig;
+};

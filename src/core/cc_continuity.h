@@ -24,10 +24,14 @@
 #include <string>
 #include <vector>
 
+#include <boost/serialization/export.hpp>
+#include <boost/serialization/access.hpp>
+#include <boost/serialization/unique_ptr.hpp>
+#include <boost/serialization/vector.hpp>
+
 namespace CalChart {
 
 class ContProcedure;
-class ContinuityEditor;
 
 struct ParseError : public std::runtime_error {
     ParseError(std::string const& str, int l, int c)
@@ -43,6 +47,7 @@ class Continuity {
 public:
     // this could throw ParseError
     Continuity(std::string const& s = "");
+    Continuity(std::vector<std::unique_ptr<ContProcedure> >);
     ~Continuity();
 
     Continuity(Continuity const&);
@@ -54,6 +59,8 @@ public:
 
     std::vector<std::unique_ptr<ContProcedure> > const& GetParsedContinuity() const noexcept { return m_parsedContinuity; }
 
+    static std::vector<std::unique_ptr<ContProcedure> > ParseContinuity(std::string const& s);
+
     friend void swap(Continuity& lhs, Continuity& rhs)
     {
         using std::swap;
@@ -63,10 +70,19 @@ public:
     friend bool operator==(Continuity const& lhs, Continuity const& rhs);
 
 private:
+    friend class boost::serialization::access;
+    template <class Archive>
+    void serialize(Archive& ar, const unsigned int version)
+    {
+        ar& text;
+        ar& m_parsedContinuity;
+    }
+
     std::string text;
     std::vector<std::unique_ptr<ContProcedure> > m_parsedContinuity;
 
     friend bool Check_Continuity(const Continuity&, const struct Continuity_values&);
+    friend void Continuity_serialize_test();
     friend void Continuity_UnitTests();
 };
 

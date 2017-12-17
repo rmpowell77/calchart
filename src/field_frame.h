@@ -26,6 +26,7 @@
 #include "cc_coord.h"
 
 #include <wx/docview.h>
+#include <wx/splitter.h>
 
 class wxComboBox;
 class wxSlider;
@@ -34,7 +35,9 @@ class Show;
 }
 
 class FieldCanvas;
+class FieldFrameControls;
 class FieldView;
+class ContinuityEditor;
 class CalChartDoc;
 class CalChartConfiguration;
 
@@ -68,7 +71,6 @@ public:
     void OnCmdPasteSheet(wxCommandEvent& event);
     void OnCmdDelete(wxCommandEvent& event);
     void OnCmdRelabel(wxCommandEvent& event);
-    void OnCmdEditCont(wxCommandEvent& event);
     void OnCmdEditPrintCont(wxCommandEvent& event);
     void OnCmdSetSheetTitle(wxCommandEvent& event);
     void OnCmdSetBeats(wxCommandEvent& event);
@@ -122,7 +124,7 @@ public:
     void OnCmd_GhostOption(wxCommandEvent& event);
 
     void OnCmd_ResetReferencePoint(wxCommandEvent& event);
-    
+
     void OnCmd_SolveTransition(wxCommandEvent& event);
 
     void OnSize(wxSizeEvent& event);
@@ -130,7 +132,6 @@ public:
     void AppendShow();
     void ImportContFile();
 
-    void SnapToGrid(CalChart::Coord& c);
     // Grid chioce distance (distance per beat), Grid placement lock (where to end)
     std::pair<CalChart::Coord::units, CalChart::Coord::units> GridChoice() const;
     void UpdatePanel();
@@ -140,7 +141,6 @@ public:
     void CanvasSetCurrentMove(CC_MOVE_MODES type);
     void zoom_callback(wxCommandEvent&);
     void zoom_callback_textenter(wxCommandEvent&);
-    void slider_sheet_callback(wxScrollEvent&);
     void refnum_callback(wxCommandEvent&);
     void OnEnableDrawPaths(wxCommandEvent&);
 
@@ -158,15 +158,13 @@ public:
     const CalChartDoc* GetShow() const;
     CalChartDoc* GetShow();
 
-    wxChoice* mGridChoice;
-    wxChoice* mRefChoice;
-    wxComboBox* mZoomBox;
-    wxSlider* mSheetSlider;
-
+    FieldFrameControls* mControls;
     FieldCanvas* mCanvas;
+    ContinuityEditor* mContEditor;
 
     wxWindow* mAnimationFrame;
     CalChartConfiguration& config;
+
     void ClearAnimationFrame();
 
     DECLARE_EVENT_TABLE()

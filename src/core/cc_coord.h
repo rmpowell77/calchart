@@ -23,6 +23,8 @@
 
 #include <cstdint>
 
+#include <boost/serialization/access.hpp>
+
 namespace CalChart {
 
 class Coord {
@@ -86,6 +88,15 @@ public:
     }
 
     units x, y;
+
+private:
+    friend class boost::serialization::access;
+    template <class Archive>
+    void serialize(Archive& ar, const unsigned int version)
+    {
+        ar& x;
+        ar& y;
+    }
 };
 
 inline Coord operator+(const Coord& a, const Coord& b)

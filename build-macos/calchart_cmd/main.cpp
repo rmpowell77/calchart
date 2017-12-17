@@ -13,6 +13,7 @@
 #include "print_ps.h"
 #include "modes.h"
 #include "cont.h"
+#include "cc_continuity.h"
 
 #include <iostream>
 #include <fstream>
@@ -86,14 +87,13 @@ void DumpContinuity(const char* show)
 
                 AnimationErrors e;
                 auto&& continuity = cont.GetParsedContinuity();
-				std::cout << "<--Errors during compile-->\n";
+                std::cout << "<--Errors during compile-->\n";
                 if (e.AnyErrors()) {
-					for (auto&& i : e.GetErrors())
-					{
-						std::cout<<"Error at ["<<i.second.line<<","<<i.second.col<<"] of type "<<i.first<<"\n";
-					}
+                    for (auto&& i : e.GetErrors()) {
+                        std::cout << "Error at [" << i.second.line << "," << i.second.col << "] of type " << i.first << "\n";
+                    }
                 }
-				std::cout << "<--End errors-->\n";
+                std::cout << "<--End errors-->\n";
                 std::cout << "<--StartParsed-->\n";
                 for (auto& proc : continuity) {
                     std::cout << *proc << "\n";
@@ -124,51 +124,50 @@ void DumpContinuityText(std::string const& text)
 
 void DoContinuityUnitTest(const char* test_cases)
 {
-	static const std::string BeginText = "<--StartText";
-	static const std::string EndText = "<--EndText";
-	static const std::string BeginParsed = "<--StartParsed-->";
-	static const std::string EndParsed = "<--EndParsed-->";
-	static const std::string BeginErrors = "<--Errors during compile-->";
-	static const std::string EndErrors = "<--End errors-->";
+    static const std::string BeginText = "<--StartText";
+    static const std::string EndText = "<--EndText";
+    static const std::string BeginParsed = "<--StartParsed-->";
+    static const std::string EndParsed = "<--EndParsed-->";
+    static const std::string BeginErrors = "<--Errors during compile-->";
+    static const std::string EndErrors = "<--End errors-->";
 
-	size_t numTestsRun = 0, numTestsPassed = 0;
+    size_t numTestsRun = 0, numTestsPassed = 0;
     std::ifstream input(test_cases);
-	while (!input.eof())
-	{
-		std::string d;
-		do {
-			getline(input, d);
-		} while (!input.eof() && (d.size() < BeginText.size() || !std::equal(BeginText.begin(), BeginText.end(), d.begin())));
-		std::string text;
-		getline(input, d);
-		bool firsttime = true;
-		while (!input.eof() && (d.size() < EndText.size() || !std::equal(EndText.begin(), EndText.end(), d.begin()))) {
-			if (!firsttime) {
-				text += "\n";
-			}
-			firsttime = false;
-			text += d;
-			getline(input, d);
-		}
-		do {
-			getline(input, d);
-		} while (!input.eof() && (d.size() < BeginErrors.size() || !std::equal(BeginErrors.begin(), BeginErrors.end(), d.begin())));
-		std::string errors;
-		getline(input, d);
-		while (!input.eof() && (d.size() < EndErrors.size() || !std::equal(EndErrors.begin(), EndErrors.end(), d.begin()))) {
-			errors += d + "\n";
-			getline(input, d);
-		}
+    while (!input.eof()) {
+        std::string d;
+        do {
+            getline(input, d);
+        } while (!input.eof() && (d.size() < BeginText.size() || !std::equal(BeginText.begin(), BeginText.end(), d.begin())));
+        std::string text;
+        getline(input, d);
+        bool firsttime = true;
+        while (!input.eof() && (d.size() < EndText.size() || !std::equal(EndText.begin(), EndText.end(), d.begin()))) {
+            if (!firsttime) {
+                text += "\n";
+            }
+            firsttime = false;
+            text += d;
+            getline(input, d);
+        }
+        do {
+            getline(input, d);
+        } while (!input.eof() && (d.size() < BeginErrors.size() || !std::equal(BeginErrors.begin(), BeginErrors.end(), d.begin())));
+        std::string errors;
+        getline(input, d);
+        while (!input.eof() && (d.size() < EndErrors.size() || !std::equal(EndErrors.begin(), EndErrors.end(), d.begin()))) {
+            errors += d + "\n";
+            getline(input, d);
+        }
 
-		do {
-			getline(input, d);
-		} while (!input.eof() && (d.size() < BeginParsed.size() || !std::equal(BeginParsed.begin(), BeginParsed.end(), d.begin())));
-		std::string parsed;
-		getline(input, d);
-		while (!input.eof() && (d.size() < EndParsed.size() || !std::equal(EndParsed.begin(), EndParsed.end(), d.begin()))) {
-			parsed += d + "\n";
-			getline(input, d);
-		}
+        do {
+            getline(input, d);
+        } while (!input.eof() && (d.size() < BeginParsed.size() || !std::equal(BeginParsed.begin(), BeginParsed.end(), d.begin())));
+        std::string parsed;
+        getline(input, d);
+        while (!input.eof() && (d.size() < EndParsed.size() || !std::equal(EndParsed.begin(), EndParsed.end(), d.begin()))) {
+            parsed += d + "\n";
+            getline(input, d);
+        }
 
         std::stringstream parsed_continuity;
         std::stringstream parse_errors;
@@ -183,27 +182,26 @@ void DoContinuityUnitTest(const char* test_cases)
             // Supply a generic parse error
             e.RegisterError(ANIMERR_SYNTAX, error.line, error.column, 0, SYMBOL_PLAIN);
             if (e.AnyErrors()) {
-                for (auto&& i : e.GetErrors())
-                {
-                    parse_errors<<"Error at ["<<i.second.line<<","<<i.second.col<<"] of type "<<i.first<<"\n";
+                for (auto&& i : e.GetErrors()) {
+                    parse_errors << "Error at [" << i.second.line << "," << i.second.col << "] of type " << i.first << "\n";
                 }
             }
         }
-		auto parsed_cont = parsed_continuity.str();
-		if ((e.AnyErrors() && parse_errors.str() != errors) || !std::equal(parsed.begin(), parsed.end(), parsed_cont.begin(), parsed_cont.end())) {
-			std::cout<<"parse failed!\n";
-			std::cout<<"Found text: \n"<< text <<"\n";
-			std::cout<<"Found parse: \n"<< parsed <<"\n";
-			std::cout<<"Parse errors: \n"<< errors <<"\n";
-			std::cout<<"parsed_continuity: \n"<< parsed_cont <<"\n";
-			std::cout<<"has Parse Errors: \n"<<parse_errors.str()<<"\n";
-		}
-		else {
-			++numTestsPassed;
-		}
-		++numTestsRun;
-	}
-	std::cout<<"ContinuityTest "<<test_cases<<" complete.  Passed "<<numTestsPassed<<" out of "<<numTestsRun<<"\n";
+        auto parsed_cont = parsed_continuity.str();
+        if ((e.AnyErrors() && parse_errors.str() != errors) || !std::equal(parsed.begin(), parsed.end(), parsed_cont.begin(), parsed_cont.end())) {
+            std::cout << "parse failed!\n";
+            std::cout << "Found text: \n" << text << "\n";
+            std::cout << "Found parse: \n" << parsed << "\n";
+            std::cout << "Parse errors: \n" << errors << "\n";
+            std::cout << "parsed_continuity: \n" << parsed_cont << "\n";
+            std::cout << "has Parse Errors: \n" << parse_errors.str() << "\n";
+        }
+        else {
+            ++numTestsPassed;
+        }
+        ++numTestsRun;
+    }
+    std::cout << "ContinuityTest " << test_cases << " complete.  Passed " << numTestsPassed << " out of " << numTestsRun << "\n";
 }
 
 void PrintToPS(const char* show, bool landscape, bool cont, bool contsheet,

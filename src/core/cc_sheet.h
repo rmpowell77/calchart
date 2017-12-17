@@ -26,13 +26,14 @@
 #include "cc_point.h"
 #include "cc_text.h"
 #include "cc_fileformat.h"
-#include "json.h"
-#include "animate.h"
 #include "cc_image.h"
 
 #include <vector>
 #include <set>
 #include <string>
+
+#include <boost/serialization/access.hpp>
+#include <boost/serialization/vector.hpp>
 
 // CalChart Sheet
 // The CalChart sheet object is a collection of CC_point locations, the number
@@ -42,30 +43,25 @@
 namespace CalChart {
 
 class Continuity;
+class Point;
+class Coord;
+struct ImageData;
+class JSONElement;
+class AnimateSheet;
 
 class Sheet {
 public:
     Sheet(size_t numPoints);
     Sheet(size_t numPoints, const std::string& newname);
     Sheet(size_t numPoints, std::istream& stream, Version_3_3_and_earlier);
-    Sheet(size_t numPoints, const uint8_t* ptr, size_t size,
-        Current_version_and_later);
+    Sheet(size_t numPoints, const uint8_t* ptr, size_t size, Version_3_4_and_3_5);
     ~Sheet();
 
-private:
-    std::vector<uint8_t> SerializeAllPoints() const;
-    std::vector<uint8_t> SerializeContinuityData() const;
-    std::vector<uint8_t> SerializePrintContinuityData() const;
-    std::vector<uint8_t> SerializeBackgroundImageData() const;
-    std::vector<uint8_t> SerializeSheetData() const;
-
 public:
-    std::vector<uint8_t> SerializeSheet() const;
-
     // continuity Functions
     const Continuity& GetContinuityBySymbol(SYMBOL_TYPE i) const;
     bool ContinuityInUse(SYMBOL_TYPE idx) const;
-    void SetContinuityText(SYMBOL_TYPE sym, const std::string& text);
+    void SetContinuity(SYMBOL_TYPE sym, Continuity const& text);
 
     // print continuity
     void SetPrintableContinuity(const std::string& name, const std::string& lines);
@@ -131,6 +127,19 @@ public:
     void toOnlineViewerJSON(JSONElement& dest, unsigned sheetNum, std::vector<std::string> dotLabels, const AnimateSheet& compiledSheet) const;
 
 private:
+    Sheet() = default;
+    friend class boost::serialization::access;
+    template <class Archive>
+    void serialize(Archive& ar, const unsigned int version)
+    {
+        ar& mAnimationContinuity;
+        ar& mPrintableContinuity;
+        ar& mBeats;
+        ar& mPoints;
+        ar& mName;
+        ar& mBackgroundImages;
+    }
+
     std::vector<Continuity> mAnimationContinuity;
     Print_continuity mPrintableContinuity;
     unsigned short mBeats;
@@ -140,7 +149,6 @@ private:
 
     // unit tests
     friend void Sheet_UnitTests();
-    static void sheet_round_trip_test();
 };
 
 void Sheet_UnitTests();

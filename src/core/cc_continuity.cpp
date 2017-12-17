@@ -24,22 +24,31 @@
 #include "cont.h"
 #include <assert.h>
 
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+
 extern int parsecontinuity();
 extern const char* yyinputbuffer;
 extern std::vector<std::unique_ptr<CalChart::ContProcedure> > ParsedContinuity;
 
 namespace CalChart {
 
-Continuity::Continuity(std::string const& s)
-    : text(s)
+std::vector<std::unique_ptr<ContProcedure> >
+Continuity::ParseContinuity(std::string const& s)
 {
-    yyinputbuffer = text.c_str();
+    yyinputbuffer = s.c_str();
     // parse out the error
     if (parsecontinuity() != 0) {
         ContToken dummy;
         throw ParseError(s, dummy.line, dummy.col);
     }
-    m_parsedContinuity = std::move(ParsedContinuity);
+    return std::move(ParsedContinuity);
+}
+
+Continuity::Continuity(std::string const& s)
+    : text(s)
+    , m_parsedContinuity(ParseContinuity(s))
+{
 }
 
 Continuity::~Continuity() = default;
@@ -50,6 +59,11 @@ Continuity::Continuity(Continuity const& other)
     for (auto&& i : other.m_parsedContinuity) {
         m_parsedContinuity.emplace_back(i->clone());
     }
+}
+
+Continuity::Continuity(std::vector<std::unique_ptr<ContProcedure> > from_cont)
+    : m_parsedContinuity(std::move(from_cont))
+{
 }
 
 Continuity& Continuity::operator=(Continuity const& other)
@@ -79,6 +93,54 @@ bool Check_Continuity(const Continuity& underTest,
     const Continuity_values& values)
 {
     return (underTest.text == values.text) && (underTest.GetText() == values.GetText);
+}
+
+void Continuity_serialize_test()
+{
+    // Set some text
+    {
+        std::ostringstream ofs("filename");
+
+        ContValue* p1 = new ContFuncStep(new ContFuncStep(new ContValueVar(1), new ContValueNeg(new ContValueFloat(-1.5)), new ContPoint()),
+            new ContFuncStep(new ContValueFloat(32.5), new ContValueFloat(3), new ContRefPoint(3)),
+            new ContStartPoint());
+        // save data to archive
+        {
+            boost::archive::text_oarchive oa(ofs);
+            // write class instance to archive
+            oa << p1;
+        }
+        ContValue* newp1 = nullptr;
+        std::istringstream ifs(ofs.str());
+        {
+            boost::archive::text_iarchive ia(ifs);
+            // read class state from archive
+            ia >> newp1;
+        }
+        ContFuncStep* dyncast = dynamic_cast<ContFuncStep*>(newp1);
+        assert(dyncast);
+        assert(*p1 == *newp1);
+    }
+    // Set some text
+    {
+        std::ostringstream ofs("filename");
+
+        Continuity cont1{ "mt E REM" };
+        // save data to archive
+        {
+            boost::archive::text_oarchive oa(ofs);
+            // write class instance to archive
+            oa << cont1;
+        }
+        Continuity cont2;
+        std::istringstream ifs(ofs.str());
+        {
+            boost::archive::text_iarchive ia(ifs);
+            // read class state from archive
+            ia >> cont2;
+        }
+        assert(cont1 == cont2);
+    }
 }
 
 void Continuity_UnitTests()
@@ -114,5 +176,7 @@ void Continuity_UnitTests()
     values.text = "";
     values.GetText = values.text;
     assert(Check_Continuity(underTest2, values));
+
+    Continuity_serialize_test();
 }
 }

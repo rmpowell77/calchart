@@ -30,6 +30,7 @@
 #include "calchartdoc.h"
 #include "cc_shapes.h"
 #include "draw.h"
+#include "cont_ui.h"
 
 #include <wx/colordlg.h>
 #include <wx/stattext.h>
@@ -1569,6 +1570,135 @@ void SpringShowModeSetup::OnCmdChoice(wxCommandEvent&)
     TransferDataToWindow();
 }
 
+class ContCellSetup : public PreferencePage {
+    DECLARE_CLASS(ContCellSetup)
+    DECLARE_EVENT_TABLE()
+
+public:
+    ContCellSetup(CalChartConfiguration& config, wxWindow* parent,
+        wxWindowID id = wxID_ANY,
+        const wxString& caption = wxT("ContCell Setup"),
+        const wxPoint& pos = wxDefaultPosition,
+        const wxSize& size = wxDefaultSize,
+        long style = wxCAPTION | wxRESIZE_BORDER | wxSYSTEM_MENU)
+        : PreferencePage(config)
+    {
+        Init();
+        Create(parent, id, caption, pos, size, style);
+    }
+    virtual ~ContCellSetup() {}
+
+    virtual void Init();
+    virtual void CreateControls();
+
+    // use these to get and set default values
+    virtual bool TransferDataToWindow();
+    virtual bool TransferDataFromWindow();
+    virtual bool ClearValuesToDefault();
+
+private:
+    void OnCmdFontSize(wxSpinEvent&);
+    void OnCmdRounding(wxSpinEvent&);
+    void OnCmdTextPadding(wxSpinEvent&);
+    void OnCmdBoxPadding(wxSpinEvent&);
+
+    wxString mFontName;
+};
+
+enum {
+    SPIN_FONT_SIZE,
+    SPIN_Rouding,
+    SPIN_Text_Padding,
+    SPIN_Box_Padding,
+};
+
+BEGIN_EVENT_TABLE(ContCellSetup, PreferencePage)
+EVT_SPINCTRL(SPIN_FONT_SIZE, ContCellSetup::OnCmdFontSize)
+EVT_SPINCTRL(SPIN_Rouding, ContCellSetup::OnCmdRounding)
+EVT_SPINCTRL(SPIN_Text_Padding, ContCellSetup::OnCmdTextPadding)
+EVT_SPINCTRL(SPIN_Box_Padding, ContCellSetup::OnCmdBoxPadding)
+END_EVENT_TABLE()
+
+IMPLEMENT_CLASS(ContCellSetup, PreferencePage)
+
+void ContCellSetup::CreateControls()
+{
+    auto topsizer = new wxBoxSizer(wxVERTICAL);
+    SetSizer(topsizer);
+
+    auto horizontalsizer = new wxStaticBoxSizer(new wxStaticBox(this, -1, wxT("Cont Cell settings")), wxHORIZONTAL);
+
+    auto boxsizer = new wxStaticBoxSizer(new wxStaticBox(this, -1, wxT("Font Size")), wxVERTICAL);
+    auto spin = new wxSpinCtrl(this, SPIN_FONT_SIZE, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 30, mConfig.Get_ContCellFontSize());
+    boxsizer->Add(spin, sBasicSizerFlags);
+    horizontalsizer->Add(boxsizer, sBasicSizerFlags);
+
+    boxsizer = new wxStaticBoxSizer(new wxStaticBox(this, -1, wxT("Rounding")), wxVERTICAL);
+    spin = new wxSpinCtrl(this, SPIN_Rouding, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 10, mConfig.Get_ContCellRounding());
+    boxsizer->Add(spin, sBasicSizerFlags);
+    horizontalsizer->Add(boxsizer, sBasicSizerFlags);
+
+    boxsizer = new wxStaticBoxSizer(new wxStaticBox(this, -1, wxT("Text Padding")), wxVERTICAL);
+    spin = new wxSpinCtrl(this, SPIN_Text_Padding, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 10, mConfig.Get_ContCellTextPadding());
+    boxsizer->Add(spin, sBasicSizerFlags);
+    horizontalsizer->Add(boxsizer, sBasicSizerFlags);
+
+    boxsizer = new wxStaticBoxSizer(new wxStaticBox(this, -1, wxT("Box Padding")), wxVERTICAL);
+    spin = new wxSpinCtrl(this, SPIN_Box_Padding, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 10, mConfig.Get_ContCellBoxPadding());
+    boxsizer->Add(spin, sBasicSizerFlags);
+    horizontalsizer->Add(boxsizer, sBasicSizerFlags);
+
+    topsizer->Add(horizontalsizer, sLeftBasicSizerFlags);
+
+    auto canvas = new ContinuityEditorCanvas(nullptr, SYMBOL_PLAIN, mConfig, this);
+    canvas->DoSetContinuity(CalChart::Continuity{ "ewns np\nmtrm e" });
+    topsizer->Add(canvas, 1, wxEXPAND);
+
+    TransferDataToWindow();
+}
+
+void ContCellSetup::Init()
+{
+}
+
+bool ContCellSetup::TransferDataToWindow()
+{
+    return true;
+}
+
+bool ContCellSetup::TransferDataFromWindow()
+{
+    // write out the values defaults:
+    return true;
+}
+
+bool ContCellSetup::ClearValuesToDefault()
+{
+    Init();
+    TransferDataToWindow();
+    return true;
+}
+
+void ContCellSetup::OnCmdFontSize(wxSpinEvent& e)
+{
+    mConfig.Set_ContCellFontSize(e.GetValue());
+}
+
+void ContCellSetup::OnCmdRounding(wxSpinEvent& e)
+{
+    mConfig.Set_ContCellRounding(e.GetValue());
+}
+
+void ContCellSetup::OnCmdTextPadding(wxSpinEvent& e)
+{
+    mConfig.Set_ContCellTextPadding(e.GetValue());
+}
+
+void ContCellSetup::OnCmdBoxPadding(wxSpinEvent& e)
+{
+    mConfig.Set_ContCellBoxPadding(e.GetValue());
+}
+
 BEGIN_EVENT_TABLE(CalChartPreferences, wxDialog)
 EVT_BUTTON(wxID_RESET, CalChartPreferences::OnCmdResetAll)
 END_EVENT_TABLE()
@@ -1631,6 +1761,8 @@ void CalChartPreferences::CreateControls()
     mNotebook->AddPage(window3, wxT("Show Mode Setup"));
     wxPanel* window4 = new SpringShowModeSetup(mConfig, mNotebook, wxID_ANY);
     mNotebook->AddPage(window4, wxT("SpringShow Mode Setup"));
+    wxPanel* window5 = new ContCellSetup(mConfig, mNotebook, wxID_ANY);
+    mNotebook->AddPage(window5, wxT("Continuity"));
 
     // the buttons on the bottom
     wxBoxSizer* okCancelBox = new wxBoxSizer(wxHORIZONTAL);

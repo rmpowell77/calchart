@@ -186,7 +186,7 @@ public:
     std::unique_ptr<wxCommand> Create_RotatePointPositionsCommand(int rotateAmount, int ref);
     std::unique_ptr<wxCommand> Create_SetReferencePointToRef0(int ref);
     std::unique_ptr<wxCommand> Create_SetSymbolCommand(SYMBOL_TYPE sym);
-    std::unique_ptr<wxCommand> Create_SetContinuityTextCommand(SYMBOL_TYPE i, const wxString& text);
+    std::unique_ptr<wxCommand> Create_SetContinuityCommand(SYMBOL_TYPE i, CalChart::Continuity const& text);
     std::unique_ptr<wxCommand> Create_SetLabelRightCommand(bool right);
     std::unique_ptr<wxCommand> Create_ToggleLabelFlipCommand();
     std::unique_ptr<wxCommand> Create_SetLabelVisibleCommand(bool isVisible);
@@ -194,7 +194,7 @@ public:
     std::unique_ptr<wxCommand> Create_AddNewBackgroundImageCommand(int left, int top, int image_width, int image_height, std::vector<unsigned char> const& data, std::vector<unsigned char> const& alpha);
     std::unique_ptr<wxCommand> Create_RemoveBackgroundImageCommand(int which);
     std::unique_ptr<wxCommand> Create_MoveBackgroundImageCommand(int which, int left, int top, int scaled_width, int scaled_height);
-    std::unique_ptr<wxCommand> Create_SetTransitionCommand(const std::vector<CalChart::Coord> &finalPositions, const std::map<SYMBOL_TYPE, std::string> &continuities, const std::vector<SYMBOL_TYPE> &marcherDotTypes);
+    std::unique_ptr<wxCommand> Create_SetTransitionCommand(const std::vector<CalChart::Coord>& finalPositions, const std::map<SYMBOL_TYPE, std::string>& continuities, const std::vector<SYMBOL_TYPE>& marcherDotTypes);
 
 private:
     static CC_doc_command_pair Inject_CalChartDocArg(CalChart::Show_command_pair);

@@ -251,7 +251,7 @@ void MovePoints_CC_MOVE_ROTATE::OnMouseLeftDown(CalChart::Coord pos)
         // and this is a point not on the origin.
         AddMoveDrag(CC_DRAG_LINE,
             std::make_unique<CalChart::Shape_arc>(
-                static_cast<CalChart::Shape_1point*>(m_shape_list.back().get())->GetOrigin(), pos));
+                        static_cast<CalChart::Shape_1point*>(m_shape_list.back().get())->GetOrigin(), pos));
     }
 }
 
