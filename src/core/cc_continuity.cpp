@@ -26,9 +26,11 @@
 
 extern int parsecontinuity();
 extern const char* yyinputbuffer;
-extern std::vector<std::unique_ptr<ContProcedure> > ParsedContinuity;
+extern std::vector<std::unique_ptr<CalChart::ContProcedure> > ParsedContinuity;
 
-CC_continuity::CC_continuity(std::string const& s)
+namespace CalChart {
+
+Continuity::Continuity(std::string const& s)
     : text(s)
 {
     yyinputbuffer = text.c_str();
@@ -40,9 +42,9 @@ CC_continuity::CC_continuity(std::string const& s)
     m_parsedContinuity = std::move(ParsedContinuity);
 }
 
-CC_continuity::~CC_continuity() = default;
+Continuity::~Continuity() = default;
 
-CC_continuity::CC_continuity(CC_continuity const& other)
+Continuity::Continuity(Continuity const& other)
     : text(other.text)
 {
     for (auto&& i : other.m_parsedContinuity) {
@@ -50,17 +52,17 @@ CC_continuity::CC_continuity(CC_continuity const& other)
     }
 }
 
-CC_continuity& CC_continuity::operator=(CC_continuity const& other)
+Continuity& Continuity::operator=(Continuity const& other)
 {
-    CC_continuity copy(other);
+    Continuity copy(other);
     swap(*this, copy);
     return *this;
 }
 
-CC_continuity::CC_continuity(CC_continuity&&) noexcept = default;
-CC_continuity& CC_continuity::operator=(CC_continuity&&) noexcept = default;
+Continuity::Continuity(Continuity&&) noexcept = default;
+Continuity& Continuity::operator=(Continuity&&) noexcept = default;
 
-bool operator==(CC_continuity const& lhs, CC_continuity const& rhs)
+bool operator==(Continuity const& lhs, Continuity const& rhs)
 {
     return std::equal(lhs.m_parsedContinuity.begin(), lhs.m_parsedContinuity.end(), rhs.m_parsedContinuity.begin(), rhs.m_parsedContinuity.end(), [](auto&& a, auto&& b) {
         return *a == *b;
@@ -68,48 +70,49 @@ bool operator==(CC_continuity const& lhs, CC_continuity const& rhs)
 }
 
 // Test Suite stuff
-struct CC_continuity_values {
+struct Continuity_values {
     std::string text;
     std::string GetText;
 };
 
-bool Check_CC_continuity(const CC_continuity& underTest,
-    const CC_continuity_values& values)
+bool Check_Continuity(const Continuity& underTest,
+    const Continuity_values& values)
 {
     return (underTest.text == values.text) && (underTest.GetText() == values.GetText);
 }
 
-void CC_continuity_UnitTests()
+void Continuity_UnitTests()
 {
     // test some defaults:
-    CC_continuity_values values;
+    Continuity_values values;
     values.text = "";
     values.GetText = values.text;
 
     // test defaults
-    CC_continuity underTest;
-    assert(Check_CC_continuity(underTest, values));
+    Continuity underTest;
+    assert(Check_Continuity(underTest, values));
 
     // test defaults with different init
-    CC_continuity underTest2;
+    Continuity underTest2;
     values.GetText = values.text;
-    assert(Check_CC_continuity(underTest2, values));
+    assert(Check_Continuity(underTest2, values));
 
     // Set some text
-    underTest2 = CC_continuity{ "mt E REM" };
+    underTest2 = Continuity{ "mt E REM" };
     values.text = "mt E REM";
     values.GetText = values.text;
-    assert(Check_CC_continuity(underTest2, values));
+    assert(Check_Continuity(underTest2, values));
 
     // Set some text
-    underTest2 = CC_continuity{ "ewns np" };
+    underTest2 = Continuity{ "ewns np" };
     values.text = "ewns np";
     values.GetText = values.text;
-    assert(Check_CC_continuity(underTest2, values));
+    assert(Check_Continuity(underTest2, values));
 
     // Reset text
-    underTest2 = CC_continuity{ "" };
+    underTest2 = Continuity{ "" };
     values.text = "";
     values.GetText = values.text;
-    assert(Check_CC_continuity(underTest2, values));
+    assert(Check_Continuity(underTest2, values));
+}
 }

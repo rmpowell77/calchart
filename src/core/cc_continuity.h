@@ -1,3 +1,4 @@
+#pragma once
 /*
  * cc_continuity.h
  * Definitions for the continuity classes
@@ -20,10 +21,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#pragma once
-
 #include <string>
 #include <vector>
+
+namespace CalChart {
 
 class ContProcedure;
 class ContinuityEditor;
@@ -38,38 +39,39 @@ struct ParseError : public std::runtime_error {
     int line, column;
 };
 
-class CC_continuity {
+class Continuity {
 public:
     // this could throw ParseError
-    CC_continuity(std::string const& s = "");
-    ~CC_continuity();
+    Continuity(std::string const& s = "");
+    ~Continuity();
 
-    CC_continuity(CC_continuity const&);
-    CC_continuity& operator=(CC_continuity const&);
-    CC_continuity(CC_continuity&&) noexcept;
-    CC_continuity& operator=(CC_continuity&&) noexcept;
+    Continuity(Continuity const&);
+    Continuity& operator=(Continuity const&);
+    Continuity(Continuity&&) noexcept;
+    Continuity& operator=(Continuity&&) noexcept;
 
     auto GetText() const noexcept { return text; }
 
     std::vector<std::unique_ptr<ContProcedure> > const& GetParsedContinuity() const noexcept { return m_parsedContinuity; }
 
-    friend void swap(CC_continuity& lhs, CC_continuity& rhs)
+    friend void swap(Continuity& lhs, Continuity& rhs)
     {
         using std::swap;
         swap(lhs.text, rhs.text);
         swap(lhs.m_parsedContinuity, rhs.m_parsedContinuity);
     }
-    friend bool operator==(CC_continuity const& lhs, CC_continuity const& rhs);
+    friend bool operator==(Continuity const& lhs, Continuity const& rhs);
 
 private:
     std::string text;
     std::vector<std::unique_ptr<ContProcedure> > m_parsedContinuity;
 
-    friend bool Check_CC_continuity(const CC_continuity&, const struct CC_continuity_values&);
-    friend void CC_continuity_UnitTests();
+    friend bool Check_Continuity(const Continuity&, const struct Continuity_values&);
+    friend void Continuity_UnitTests();
 };
 
-bool Check_CC_continuity(const CC_continuity&,
-    const struct CC_continuity_values&);
+bool Check_Continuity(const Continuity&,
+    const struct Continuity_values&);
 
-void CC_continuity_UnitTests();
+void Continuity_UnitTests();
+}

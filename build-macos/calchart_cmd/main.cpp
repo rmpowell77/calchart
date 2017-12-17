@@ -20,10 +20,12 @@
 #include <unistd.h>
 #include <getopt.h>
 
+using namespace CalChart;
+
 void AnimateShow(const char* show)
 {
     std::ifstream input(show);
-    std::unique_ptr<CC_show> p(CC_show::Create_CC_show(input));
+    std::unique_ptr<Show> p(Show::Create_CC_show(input));
     Animation a(*p,
         [](const std::string& notice) { std::cout << notice << "\n"; },
         [](const std::map<AnimateError, ErrorMarker>&, unsigned,
@@ -36,7 +38,7 @@ void AnimateShow(const char* show)
 void PrintShow(const char* show)
 {
     std::ifstream input(show);
-    std::unique_ptr<CC_show> p(CC_show::Create_CC_show(input));
+    std::unique_ptr<Show> p(Show::Create_CC_show(input));
     Animation a(*p,
         [](const std::string& notice) { std::cout << notice << "\n"; },
         [](const std::map<AnimateError, ErrorMarker>&, unsigned,
@@ -68,7 +70,7 @@ void PrintShow(const char* show)
 void DumpContinuity(const char* show)
 {
     std::ifstream input(show);
-    std::unique_ptr<const CC_show> p(CC_show::Create_CC_show(input));
+    std::unique_ptr<const Show> p(Show::Create_CC_show(input));
     auto sheet_num = 0;
     for (auto i = p->GetSheetBegin(); i != p->GetSheetEnd(); ++i, ++sheet_num) {
         static const SYMBOL_TYPE k_symbols[] = {
@@ -105,7 +107,7 @@ void DumpContinuity(const char* show)
 void DumpContinuityText(std::string const& text)
 {
     try {
-        auto&& continuity = CC_continuity(text);
+        auto&& continuity = Continuity(text);
         for (auto& proc : continuity.GetParsedContinuity()) {
             std::cout << *proc << "\n";
         }
@@ -172,7 +174,7 @@ void DoContinuityUnitTest(const char* test_cases)
         std::stringstream parse_errors;
         AnimationErrors e;
         try {
-            auto&& continuity = CC_continuity(text);
+            auto&& continuity = Continuity(text);
             for (auto& proc : continuity.GetParsedContinuity()) {
                 parsed_continuity << *proc << "\n";
             }
@@ -208,7 +210,7 @@ void PrintToPS(const char* show, bool landscape, bool cont, bool contsheet,
     bool overview, std::string const& outfile)
 {
     std::ifstream input(show);
-    std::unique_ptr<const CC_show> p(CC_show::Create_CC_show(input));
+    std::unique_ptr<const Show> p(Show::Create_CC_show(input));
 
     std::ofstream output(outfile);
 
@@ -273,7 +275,7 @@ bool ContinuityCountDifferentThanSymbol(const char* show)
     if (!input.is_open()) {
         throw std::runtime_error("could not open file");
     }
-    std::unique_ptr<CC_show> p(CC_show::Create_CC_show(input));
+    std::unique_ptr<Show> p(Show::Create_CC_show(input));
     return false;
 }
 

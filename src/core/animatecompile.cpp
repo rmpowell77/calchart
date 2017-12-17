@@ -25,6 +25,8 @@
 #include "animatecommand.h"
 #include "cc_sheet.h"
 
+namespace CalChart {
+
 void AnimationErrors::RegisterError(AnimateError err, const ContToken* token,
     unsigned curr_pt, SYMBOL_TYPE contsymbol)
 {
@@ -45,7 +47,7 @@ void AnimationErrors::RegisterError(AnimateError err, int line, int col,
     mErrorMarkers[err].pntgroup.insert(curr_pt);
 }
 
-AnimateCompile::AnimateCompile(const CC_show& show, SYMBOL_TYPE cont_symbol, unsigned pt_num, CC_show::const_CC_sheet_iterator_t c_sheet, AnimateState& state)
+AnimateCompile::AnimateCompile(const Show& show, SYMBOL_TYPE cont_symbol, unsigned pt_num, Show::const_Sheet_iterator_t c_sheet, AnimateState& state)
     : mShow(show)
     , contsymbol(cont_symbol)
     , curr_pt(pt_num)
@@ -54,10 +56,10 @@ AnimateCompile::AnimateCompile(const CC_show& show, SYMBOL_TYPE cont_symbol, uns
 {
 }
 
-std::tuple<AnimateCommands, AnimationVariables, AnimationErrors>
+AnimateCommands
 AnimateCompile::Compile(
-    const CC_show& show, AnimationVariables variablesStates,
-    AnimationErrors errors, CC_show::const_CC_sheet_iterator_t c_sheet,
+    const Show& show, AnimationVariables& variablesStates,
+    AnimationErrors& errors, Show::const_Sheet_iterator_t c_sheet,
     unsigned pt_num, SYMBOL_TYPE cont_symbol,
     std::vector<std::unique_ptr<ContProcedure> > const& procs)
 {
@@ -105,7 +107,7 @@ AnimateCompile::Compile(
         ac.RegisterError(ANIMERR_EXTRATIME, NULL);
         ac.Append(std::make_shared<AnimateCommandMT>(state.beats_rem, ANIMDIR_E), NULL);
     }
-    return { state.cmds, state.mVars, state.error_markers };
+    return state.cmds;
 }
 
 bool AnimateCompile::Append(std::shared_ptr<AnimateCommand> cmd,
@@ -155,7 +157,7 @@ AnimatePoint AnimateCompile::GetStartingPosition() const
 
 AnimatePoint AnimateCompile::GetEndingPosition(const ContToken* token) const
 {
-    CC_show::const_CC_sheet_iterator_t sheet = curr_sheet + 1;
+    auto sheet = curr_sheet + 1;
 
     while (1) {
         if (sheet == mShow.GetSheetEnd()) {
@@ -172,4 +174,5 @@ AnimatePoint AnimateCompile::GetEndingPosition(const ContToken* token) const
 AnimatePoint AnimateCompile::GetReferencePointPosition(unsigned refnum) const
 {
     return curr_sheet->GetPosition(GetCurrentPoint(), refnum + 1);
+}
 }

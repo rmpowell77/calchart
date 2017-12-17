@@ -1,3 +1,4 @@
+#pragma once
 //
 //  e7_transition_solver.hpp
 //  CalChart
@@ -6,13 +7,13 @@
 //
 //
 
-#pragma once
-
 #include <array>
 #include <vector>
 
 #include "cc_coord.h"
 #include "cc_sheet.h"
+
+namespace CalChart {
 
 /*!
  * @brief Packages together all of the arguments
@@ -166,7 +167,7 @@ struct TransitionSolverResult {
      * @detail Note that if successfullySolved is false, the value
      * for this field is undefined.
      */
-    std::vector<CC_coord> finalPositions;
+    std::vector<CalChart::Coord> finalPositions;
 
     /*!
      * @brief If a solution was found, this will contain the continuity
@@ -242,7 +243,7 @@ public:
  * as an input to the transition solver. If the error list is empty, there were no issues,
  * and the stuntsheet can safely be used as an input.
  */
-std::vector<std::string> validateSheetForTransitionSolver(const CC_sheet& sheet);
+std::vector<std::string> validateSheetForTransitionSolver(const CalChart::Sheet& sheet);
 
 /*!
  * @brief Solve the transition between the two provided stuntsheets.
@@ -253,4 +254,7 @@ std::vector<std::string> validateSheetForTransitionSolver(const CC_sheet& sheet)
  * solver as it runs, and that can take some role in deciding when the task should abort.
  * @result The solution for the transition between the provided stuntsheets.
  */
-TransitionSolverResult runTransitionSolver(const CC_sheet& sheet1, const CC_sheet& sheet2, TransitionSolverParams params, TransitionSolverDelegate* delegate);
+TransitionSolverResult runTransitionSolver(const CalChart::Sheet& sheet1, const CalChart::Sheet& sheet2, TransitionSolverParams params, TransitionSolverDelegate* delegate);
+}
+
+

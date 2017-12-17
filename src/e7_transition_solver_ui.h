@@ -24,8 +24,8 @@ public:
 
     virtual void OnDraw(wxDC* dc) override;
     virtual void OnUpdate(wxView* sender, wxObject* hint = (wxObject*)NULL) override;
-
-    void ApplyTransitionSolution(TransitionSolverResult solution);
+    
+    void ApplyTransitionSolution(CalChart::TransitionSolverResult solution);
     void SelectMarchers(std::set<unsigned> marchers);
 };
 
@@ -79,8 +79,8 @@ private:
     void CreateControls();
 
     void Apply();
-    std::pair<std::vector<std::string>, std::vector<std::string> > ValidateForTransitionSolver();
-    void ChooseAlgorithm(TransitionSolverParams::AlgorithmIdentifier algorithm);
+    std::pair<std::vector<std::string>, std::vector<std::string>> ValidateForTransitionSolver();
+    void ChooseAlgorithm(CalChart::TransitionSolverParams::AlgorithmIdentifier algorithm);
     void SetAllowedCommands(std::vector<unsigned> commandIndices);
     void AddNewGroup(std::string groupName);
     void RemoveGroup(unsigned groupIndex);
@@ -94,13 +94,13 @@ private:
     void SetDestinations(std::set<unsigned> marchers);
     void AddDestinations(std::set<unsigned> marchers);
     void RemoveDestinations(std::set<unsigned> marchers);
-
-    std::vector<TransitionSolverParams::MarcherInstruction> mInstructionOptions;
+    
+    std::vector<CalChart::TransitionSolverParams::MarcherInstruction> mInstructionOptions;
     int mSelectedGroup;
     std::vector<std::string> mGroupNames;
-
-    TransitionSolverParams mSolverParams;
-
+    
+    CalChart::TransitionSolverParams mSolverParams;
+    
     CalChartDoc* mDoc;
     TransitionSolverView* mView;
 
