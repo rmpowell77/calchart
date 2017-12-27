@@ -51,7 +51,7 @@ END_EVENT_TABLE()
 
 // Define a constructor for field canvas
 ContinuityEditorCanvas::ContinuityEditorCanvas(CalChartDoc* doc, SYMBOL_TYPE sym, CalChartConfiguration& config, wxWindow* parent)
-    : super(parent, wxID_ANY, wxDefaultPosition, wxSize{ 200, 200 })
+    : super(config, parent, wxID_ANY, wxDefaultPosition, wxSize{ 200, 200 })
     , mDoc(doc)
     , mSym(sym)
     , mConfig(config)

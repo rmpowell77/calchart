@@ -578,9 +578,9 @@ bool DrawingSetup::TransferDataFromWindow()
 
 bool DrawingSetup::ClearValuesToDefault()
 {
-    for (int i = 0; i < COLOR_NUM; ++i) {
+    for (CalChartColors i = COLOR_FIELD; i < COLOR_NUM; i = static_cast<CalChartColors>(static_cast<int>(i) + 1)) {
         SetColor(i, mConfig.GetDefaultPenWidth()[i], mConfig.GetDefaultColors()[i]);
-        mConfig.Clear_ConfigColor(i);
+        mConfig.Clear_CalChartConfigColor(i);
     }
     Init();
     TransferDataToWindow();
@@ -633,7 +633,7 @@ void DrawingSetup::OnCmdResetColors(wxCommandEvent&)
     int selection = nameBox->GetSelection();
     SetColor(selection, mConfig.GetDefaultPenWidth()[selection],
         mConfig.GetDefaultColors()[selection]);
-    mConfig.Clear_ConfigColor(selection);
+    mConfig.Clear_CalChartConfigColor(static_cast<CalChartColors>(selection));
 }
 
 void DrawingSetup::OnCmdChooseNewColor(wxCommandEvent&)
@@ -1601,22 +1601,33 @@ private:
     void OnCmdRounding(wxSpinEvent&);
     void OnCmdTextPadding(wxSpinEvent&);
     void OnCmdBoxPadding(wxSpinEvent&);
+    void OnCmdSelectWidth(wxSpinEvent&);
 
-    wxString mFontName;
+    void OnCmdSelectColors(wxCommandEvent&);
+    void OnCmdChooseNewColor(wxCommandEvent&);
+    void OnCmdResetColors(wxCommandEvent&);
+    void SetColor(int selection, const wxColour& color);
+
+    // we can set up the Font, colors, size.
+    wxBitmapComboBox* nameBox;
+    wxBrush mContCellBrushes[COLOR_CONTCELLS_NUM];
 };
 
 enum {
-    SPIN_FONT_SIZE,
+    SPIN_Font_Size,
     SPIN_Rouding,
     SPIN_Text_Padding,
     SPIN_Box_Padding,
 };
 
 BEGIN_EVENT_TABLE(ContCellSetup, PreferencePage)
-EVT_SPINCTRL(SPIN_FONT_SIZE, ContCellSetup::OnCmdFontSize)
+EVT_SPINCTRL(SPIN_Font_Size, ContCellSetup::OnCmdFontSize)
 EVT_SPINCTRL(SPIN_Rouding, ContCellSetup::OnCmdRounding)
 EVT_SPINCTRL(SPIN_Text_Padding, ContCellSetup::OnCmdTextPadding)
 EVT_SPINCTRL(SPIN_Box_Padding, ContCellSetup::OnCmdBoxPadding)
+EVT_BUTTON(BUTTON_SELECT, ContCellSetup::OnCmdSelectColors)
+EVT_BUTTON(BUTTON_RESTORE, ContCellSetup::OnCmdResetColors)
+EVT_COMBOBOX(NEW_COLOR_CHOICE, ContCellSetup::OnCmdChooseNewColor)
 END_EVENT_TABLE()
 
 IMPLEMENT_CLASS(ContCellSetup, PreferencePage)
@@ -1626,39 +1637,70 @@ void ContCellSetup::CreateControls()
     auto topsizer = new wxBoxSizer(wxVERTICAL);
     SetSizer(topsizer);
 
-    auto horizontalsizer = new wxStaticBoxSizer(new wxStaticBox(this, -1, wxT("Cont Cell settings")), wxHORIZONTAL);
+    auto boxsizer = new wxStaticBoxSizer(
+        new wxStaticBox(this, -1, wxT("Color settings")), wxVERTICAL);
+    topsizer->Add(boxsizer);
 
-    auto boxsizer = new wxStaticBoxSizer(new wxStaticBox(this, -1, wxT("Font Size")), wxVERTICAL);
-    auto spin = new wxSpinCtrl(this, SPIN_FONT_SIZE, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 30, mConfig.Get_ContCellFontSize());
-    boxsizer->Add(spin, sBasicSizerFlags);
+    auto horizontalsizer = new wxBoxSizer(wxHORIZONTAL);
+    boxsizer->Add(horizontalsizer, sLeftBasicSizerFlags);
+    nameBox = new wxBitmapComboBox(
+        this, NEW_COLOR_CHOICE, mConfig.GetContCellColorNames().at(0), wxDefaultPosition,
+        wxDefaultSize, COLOR_CONTCELLS_NUM, mConfig.GetContCellColorNames().data(),
+        wxCB_READONLY | wxCB_DROPDOWN);
+    horizontalsizer->Add(nameBox, sBasicSizerFlags);
+
+    for (auto i = 0; i < COLOR_CONTCELLS_NUM; ++i) {
+        wxBitmap temp_bitmap(16, 16);
+        wxMemoryDC temp_dc;
+        temp_dc.SelectObject(temp_bitmap);
+        temp_dc.SetBackground(mConfig.Get_ContCellBrushAndPen(static_cast<ContCellColors>(i)).first);
+        temp_dc.Clear();
+        nameBox->SetItemBitmap(i, temp_bitmap);
+    }
+    nameBox->SetSelection(0);
+
+    horizontalsizer = new wxBoxSizer(wxHORIZONTAL);
+    boxsizer->Add(horizontalsizer, sLeftBasicSizerFlags);
+    horizontalsizer->Add(new wxButton(this, BUTTON_SELECT, wxT("&Change Color")), sBasicSizerFlags);
+    horizontalsizer->Add(new wxButton(this, BUTTON_RESTORE, wxT("&Reset Color")), sBasicSizerFlags);
+
+    horizontalsizer = new wxStaticBoxSizer(new wxStaticBox(this, -1, wxT("Cont Cell settings")), wxHORIZONTAL);
+    topsizer->Add(horizontalsizer);
+
+    boxsizer = new wxStaticBoxSizer(new wxStaticBox(this, -1, wxT("Font Size")), wxVERTICAL);
     horizontalsizer->Add(boxsizer, sBasicSizerFlags);
+    auto spin = new wxSpinCtrl(this, SPIN_Font_Size, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 30, mConfig.Get_ContCellFontSize());
+    boxsizer->Add(spin, sBasicSizerFlags);
 
     boxsizer = new wxStaticBoxSizer(new wxStaticBox(this, -1, wxT("Rounding")), wxVERTICAL);
+    horizontalsizer->Add(boxsizer, sBasicSizerFlags);
     spin = new wxSpinCtrl(this, SPIN_Rouding, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 10, mConfig.Get_ContCellRounding());
     boxsizer->Add(spin, sBasicSizerFlags);
-    horizontalsizer->Add(boxsizer, sBasicSizerFlags);
 
     boxsizer = new wxStaticBoxSizer(new wxStaticBox(this, -1, wxT("Text Padding")), wxVERTICAL);
+    horizontalsizer->Add(boxsizer, sBasicSizerFlags);
     spin = new wxSpinCtrl(this, SPIN_Text_Padding, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 10, mConfig.Get_ContCellTextPadding());
     boxsizer->Add(spin, sBasicSizerFlags);
-    horizontalsizer->Add(boxsizer, sBasicSizerFlags);
 
     boxsizer = new wxStaticBoxSizer(new wxStaticBox(this, -1, wxT("Box Padding")), wxVERTICAL);
+    horizontalsizer->Add(boxsizer, sBasicSizerFlags);
     spin = new wxSpinCtrl(this, SPIN_Box_Padding, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 10, mConfig.Get_ContCellBoxPadding());
     boxsizer->Add(spin, sBasicSizerFlags);
-    horizontalsizer->Add(boxsizer, sBasicSizerFlags);
-
-    topsizer->Add(horizontalsizer, sLeftBasicSizerFlags);
 
     auto canvas = new ContinuityEditorCanvas(nullptr, SYMBOL_PLAIN, mConfig, this);
-    canvas->DoSetContinuity(CalChart::Continuity{ "ewns np\nmtrm e" });
     topsizer->Add(canvas, 1, wxEXPAND);
+    canvas->DoSetContinuity(CalChart::Continuity{ "ewns np\nX = distfrom(sp r2)\nmt (24-X)w\nmarch gv dist(np) dir(np) w\nmtrm e" });
 
     TransferDataToWindow();
 }
 
 void ContCellSetup::Init()
 {
+    // first read out the defaults:
+    for (auto i = 0; i < COLOR_CONTCELLS_NUM; ++i) {
+        auto brushAndPen = mConfig.Get_ContCellBrushAndPen(static_cast<ContCellColors>(i));
+        mContCellBrushes[i] = brushAndPen.first;
+    }
 }
 
 bool ContCellSetup::TransferDataToWindow()
@@ -1668,7 +1710,6 @@ bool ContCellSetup::TransferDataToWindow()
 
 bool ContCellSetup::TransferDataFromWindow()
 {
-    // write out the values defaults:
     return true;
 }
 
@@ -1682,21 +1723,74 @@ bool ContCellSetup::ClearValuesToDefault()
 void ContCellSetup::OnCmdFontSize(wxSpinEvent& e)
 {
     mConfig.Set_ContCellFontSize(e.GetValue());
+    Refresh();
 }
 
 void ContCellSetup::OnCmdRounding(wxSpinEvent& e)
 {
     mConfig.Set_ContCellRounding(e.GetValue());
+    Refresh();
 }
 
 void ContCellSetup::OnCmdTextPadding(wxSpinEvent& e)
 {
     mConfig.Set_ContCellTextPadding(e.GetValue());
+    Refresh();
 }
 
 void ContCellSetup::OnCmdBoxPadding(wxSpinEvent& e)
 {
     mConfig.Set_ContCellBoxPadding(e.GetValue());
+    Refresh();
+}
+
+void ContCellSetup::SetColor(int selection, const wxColour& color)
+{
+    auto pen = *wxThePenList->FindOrCreatePen(color, 1, wxPENSTYLE_SOLID);
+    mContCellBrushes[selection] = *wxTheBrushList->FindOrCreateBrush(color, wxBRUSHSTYLE_SOLID);
+
+    mConfig.Set_ContCellBrushAndPen(static_cast<ContCellColors>(selection),
+        mContCellBrushes[selection],
+        pen);
+
+    // update the namebox list
+    {
+        wxBitmap test_bitmap(16, 16);
+        wxMemoryDC temp_dc;
+        temp_dc.SelectObject(test_bitmap);
+        temp_dc.SetBackground(mContCellBrushes[selection]);
+        temp_dc.Clear();
+        nameBox->SetItemBitmap(selection, test_bitmap);
+    }
+    Refresh();
+}
+
+void ContCellSetup::OnCmdSelectColors(wxCommandEvent&)
+{
+    int selection = nameBox->GetSelection();
+    wxColourData data;
+    data.SetChooseFull(true);
+    data.SetColour(mContCellBrushes[selection].GetColour());
+    wxColourDialog dialog(this, &data);
+    if (dialog.ShowModal() == wxID_OK) {
+        wxColourData retdata = dialog.GetColourData();
+        wxColour c = retdata.GetColour();
+        SetColor(selection, c);
+    }
+    Refresh();
+}
+
+void ContCellSetup::OnCmdResetColors(wxCommandEvent&)
+{
+    int selection = nameBox->GetSelection();
+    SetColor(selection, mConfig.GetContCellDefaultColors()[selection]);
+    mConfig.Clear_ContCellConfigColor(static_cast<ContCellColors>(selection));
+    Refresh();
+}
+
+void ContCellSetup::OnCmdChooseNewColor(wxCommandEvent&)
+{
+    Refresh();
 }
 
 BEGIN_EVENT_TABLE(CalChartPreferences, wxDialog)

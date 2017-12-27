@@ -223,7 +223,7 @@ std::ostream& ContPoint::Print(std::ostream& os) const
 DrawableCont ContPoint::GetDrawableCont() const
 {
     return {
-        ContType::value,
+        ContType::point,
         "Point",
         {}
     };
@@ -248,7 +248,7 @@ std::ostream& ContStartPoint::Print(std::ostream& os) const
 DrawableCont ContStartPoint::GetDrawableCont() const
 {
     return {
-        ContType::value,
+        ContType::point,
         "Start Point",
         {}
     };
@@ -273,7 +273,7 @@ std::ostream& ContNextPoint::Print(std::ostream& os) const
 DrawableCont ContNextPoint::GetDrawableCont() const
 {
     return {
-        ContType::value,
+        ContType::point,
         "Next Point",
         {}
     };
@@ -298,7 +298,7 @@ std::ostream& ContRefPoint::Print(std::ostream& os) const
 DrawableCont ContRefPoint::GetDrawableCont() const
 {
     return {
-        ContType::value,
+        ContType::point,
         std::string("Ref Point ") + std::to_string(refnum),
         {}
     };
@@ -361,7 +361,26 @@ std::ostream& ContValueDefined::Print(std::ostream& os) const
     return os << "Defined:" << ContDefinedValue_strings[val];
 }
 
-DrawableCont ContValueDefined::GetDrawableCont() const { return { ContType::value, ContDefinedValue_strings[val], {} }; }
+DrawableCont ContValueDefined::GetDrawableCont() const
+{
+    // to_string gives a lot of decimal points.  256 on the stack should be ok...?
+    auto type = ContType::value;
+    switch (val) {
+    case CC_NW:
+    case CC_W:
+    case CC_SW:
+    case CC_S:
+    case CC_SE:
+    case CC_E:
+    case CC_NE:
+    case CC_N:
+        type = ContType::direction;
+        break;
+    default:
+        type = ContType::steptype;
+    }
+    return { type, ContDefinedValue_strings[val], {} };
+}
 
 std::unique_ptr<ContValue> ContValueDefined::clone() const
 {
@@ -382,7 +401,7 @@ std::ostream& ContValueAdd::Print(std::ostream& os) const
 DrawableCont ContValueAdd::GetDrawableCont() const
 {
     return {
-        ContType::value,
+        ContType::function,
         "( %@ + %@ )",
         { val1->GetDrawableCont(), val2->GetDrawableCont() }
     };
@@ -407,7 +426,7 @@ std::ostream& ContValueSub::Print(std::ostream& os) const
 DrawableCont ContValueSub::GetDrawableCont() const
 {
     return {
-        ContType::value,
+        ContType::function,
         "( %@ - %@ )",
         { val1->GetDrawableCont(), val2->GetDrawableCont() }
     };
@@ -432,7 +451,7 @@ std::ostream& ContValueMult::Print(std::ostream& os) const
 DrawableCont ContValueMult::GetDrawableCont() const
 {
     return {
-        ContType::value,
+        ContType::function,
         "( %@ * %@ )",
         { val1->GetDrawableCont(), val2->GetDrawableCont() }
     };
@@ -464,7 +483,7 @@ std::ostream& ContValueDiv::Print(std::ostream& os) const
 DrawableCont ContValueDiv::GetDrawableCont() const
 {
     return {
-        ContType::value,
+        ContType::function,
         "( %@ / %@ )",
         { val1->GetDrawableCont(), val2->GetDrawableCont() }
     };
@@ -486,7 +505,7 @@ std::ostream& ContValueNeg::Print(std::ostream& os) const
 DrawableCont ContValueNeg::GetDrawableCont() const
 {
     return {
-        ContType::value,
+        ContType::function,
         "-%@",
         { val->GetDrawableCont() }
     };
@@ -570,7 +589,7 @@ std::ostream& ContFuncDir::Print(std::ostream& os) const
 DrawableCont ContFuncDir::GetDrawableCont() const
 {
     return {
-        ContType::value,
+        ContType::function,
         "Direction to %@",
         { pnt->GetDrawableCont() }
     };
@@ -600,7 +619,7 @@ std::ostream& ContFuncDirFrom::Print(std::ostream& os) const
 DrawableCont ContFuncDirFrom::GetDrawableCont() const
 {
     return {
-        ContType::value,
+        ContType::function,
         "Direction from %@ to %@",
         { pnt_start->GetDrawableCont(), pnt_end->GetDrawableCont() }
     };
@@ -626,7 +645,7 @@ std::ostream& ContFuncDist::Print(std::ostream& os) const
 DrawableCont ContFuncDist::GetDrawableCont() const
 {
     return {
-        ContType::value,
+        ContType::function,
         "Distance to %@",
         { pnt->GetDrawableCont() }
     };
@@ -652,7 +671,7 @@ std::ostream& ContFuncDistFrom::Print(std::ostream& os) const
 DrawableCont ContFuncDistFrom::GetDrawableCont() const
 {
     return {
-        ContType::value,
+        ContType::function,
         "Distance from %@ to %@",
         { pnt_start->GetDrawableCont(), pnt_end->GetDrawableCont() }
     };
@@ -694,7 +713,7 @@ std::ostream& ContFuncEither::Print(std::ostream& os) const
 DrawableCont ContFuncEither::GetDrawableCont() const
 {
     return {
-        ContType::value,
+        ContType::function,
         "Either direction to %@ or %@, depending on whichever is a shorter angle to %@",
         { dir1->GetDrawableCont(), dir2->GetDrawableCont(), pnt->GetDrawableCont() }
     };
@@ -719,7 +738,7 @@ std::ostream& ContFuncOpp::Print(std::ostream& os) const
 DrawableCont ContFuncOpp::GetDrawableCont() const
 {
     return {
-        ContType::value,
+        ContType::function,
         "opposite direction of %@",
         { dir->GetDrawableCont() }
     };
@@ -746,7 +765,7 @@ std::ostream& ContFuncStep::Print(std::ostream& os) const
 DrawableCont ContFuncStep::GetDrawableCont() const
 {
     return {
-        ContType::value,
+        ContType::function,
         "Step drill at %@ beats for a block size of %@ from point %@",
         { numbeats->GetDrawableCont(), blksize->GetDrawableCont(), pnt->GetDrawableCont() }
     };

@@ -21,6 +21,7 @@
 */
 
 #include "custom_listview.h"
+#include "confgr.h"
 #include <wx/dcbuffer.h>
 
 #include <numeric>
@@ -35,13 +36,15 @@ EVT_ERASE_BACKGROUND(CustomListViewPanel::OnEraseBackground)
 END_EVENT_TABLE()
 
 // Define a constructor for field canvas
-CustomListViewPanel::CustomListViewPanel(wxWindow* parent,
+CustomListViewPanel::CustomListViewPanel(CalChartConfiguration const& config,
+    wxWindow* parent,
     wxWindowID winid,
     const wxPoint& pos,
     const wxSize& size)
     : super(parent, winid, pos, size)
     , m_selected(-1)
     , m_dragging(false)
+    , mConfig(config)
 {
 }
 
@@ -106,7 +109,7 @@ void CustomListViewPanel::OnPaint(wxPaintEvent& event)
             continue;
         }
         auto&& current_brush = dc.GetBrush();
-        dc.SetBrush(*wxBLUE_BRUSH);
+        dc.SetBrush(mConfig.Get_ContCellBrushAndPen(COLOR_CONTCELLS_HIGHLIGHT).first);
         auto y_delta = m_lastLocation.y - m_firstPress.y;
         auto height = mContCells.at(i)->Height();
         dc.DrawRectangle(x_start, y_start + y_delta, 0xFFFF, height);

@@ -26,6 +26,8 @@
 #include <set>
 #include <vector>
 
+class CalChartConfiguration;
+
 // the idea is that we will have a collection of smaller cells, that can be moved around.
 // View for linking CalChartDoc with ContinuityEditor
 class CustomListViewCell {
@@ -44,7 +46,8 @@ class CustomListViewPanel : public wxScrolledWindow {
 
 public:
     // Basic functions
-    CustomListViewPanel(wxWindow* parent,
+    CustomListViewPanel(CalChartConfiguration const& config,
+        wxWindow* parent,
         wxWindowID winid = wxID_ANY,
         const wxPoint& pos = wxDefaultPosition,
         const wxSize& size = wxDefaultSize);
@@ -70,6 +73,7 @@ private:
     wxPoint m_lastLocation;
     size_t m_selected;
     bool m_dragging;
+    CalChartConfiguration const& mConfig;
 
     DECLARE_EVENT_TABLE()
 };

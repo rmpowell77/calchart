@@ -68,6 +68,17 @@ enum CalChartColors {
     COLOR_NUM
 };
 
+enum ContCellColors {
+    COLOR_CONTCELLS_PROC,
+    COLOR_CONTCELLS_VALUE,
+    COLOR_CONTCELLS_FUNCTION,
+    COLOR_CONTCELLS_DIRECTION,
+    COLOR_CONTCELLS_STEPTYPE,
+    COLOR_CONTCELLS_POINT,
+    COLOR_CONTCELLS_HIGHLIGHT,
+    COLOR_CONTCELLS_NUM,
+};
+
 enum CalChartShowModes {
     STANDARD,
     FULL_FIELD,
@@ -206,6 +217,9 @@ public:
     std::vector<wxString> GetColorNames() const;
     std::vector<wxString> GetDefaultColors() const;
     std::vector<int> GetDefaultPenWidth() const;
+    std::vector<wxString> GetContCellColorNames() const;
+    std::vector<wxString> GetContCellDefaultColors() const;
+    std::vector<int> GetContCellDefaultPenWidth() const;
     std::vector<wxString> Get_yard_text_index() const;
     std::vector<wxString> Get_spr_line_text_index() const;
 
@@ -215,7 +229,13 @@ public:
     std::pair<wxBrush, wxPen> Get_CalChartBrushAndPen(CalChartColors c) const;
     void Set_CalChartBrushAndPen(CalChartColors c, const wxBrush& brush,
         const wxPen& pen);
-    void Clear_ConfigColor(size_t selection);
+    void Clear_CalChartConfigColor(CalChartColors selection);
+
+    mutable std::map<ContCellColors, ColorWidth_t> mContCellColorsAndWidth;
+    std::pair<wxBrush, wxPen> Get_ContCellBrushAndPen(ContCellColors c) const;
+    void Set_ContCellBrushAndPen(ContCellColors c, const wxBrush& brush,
+        const wxPen& pen);
+    void Clear_ContCellConfigColor(ContCellColors selection);
 
     // Shows
     static constexpr auto kShowModeValues = 10;

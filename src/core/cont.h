@@ -62,6 +62,9 @@ enum ContDefinedValue {
 enum class ContType {
     procedure,
     value,
+    function,
+    direction,
+    steptype,
     point,
 };
 
