@@ -31,38 +31,46 @@ EVT_PAINT(CustomListViewPanel::OnPaint)
 EVT_CHAR(CustomListViewPanel::OnChar)
 EVT_LEFT_DOWN(CustomListViewPanel::OnLeftDownMouseEvent)
 EVT_LEFT_UP(CustomListViewPanel::OnLeftUpMouseEvent)
+EVT_LEFT_DCLICK(CustomListViewPanel::OnLeftDoubleClick)
 EVT_MOTION(CustomListViewPanel::OnMouseMove)
 EVT_ERASE_BACKGROUND(CustomListViewPanel::OnEraseBackground)
 END_EVENT_TABLE()
 
 // Define a constructor for field canvas
-CustomListViewPanel::CustomListViewPanel(CalChartConfiguration const& config,
-    wxWindow* parent,
+CustomListViewPanel::CustomListViewPanel(wxWindow* parent,
     wxWindowID winid,
     const wxPoint& pos,
-    const wxSize& size)
-    : super(parent, winid, pos, size)
+    const wxSize& size,
+    long style,
+    const wxString& name)
+    : super(parent, winid, pos, size, style, name)
     , m_selected(-1)
     , m_dragging(false)
-    , mConfig(config)
 {
 }
 
 // Define the repainting behaviour
-void CustomListViewPanel::SetContCells(std::vector<std::unique_ptr<CustomListViewCell> > cells)
+void CustomListViewPanel::SetCells(std::vector<std::unique_ptr<DrawableCell> > cells)
 {
-    mContCells = std::move(cells);
-    auto total_y = std::accumulate(mContCells.begin(), mContCells.end(), 0, [](auto&& a, auto&& b) {
+    mCells = std::move(cells);
+    auto total_y = std::accumulate(mCells.begin(), mCells.end(), 0, [](auto&& a, auto&& b) {
         return a + b->Height();
     });
-    auto max_x_elem = std::max_element(mContCells.begin(), mContCells.end(), [](auto&& a, auto&& b) {
+    auto max_x_elem = std::max_element(mCells.begin(), mCells.end(), [](auto&& a, auto&& b) {
         return a->Width() < b->Width();
     });
     // give a slight little padding on max_x
-    auto max_x = max_x_elem != mContCells.end() ? ((*max_x_elem)->Width() * 1.1) : 0;
+    auto max_x = max_x_elem != mCells.end() ? ((*max_x_elem)->Width() * 1.1) : 0;
 
     SetVirtualSize(wxSize{ int(max_x), total_y });
     SetScrollRate(1, 1);
+}
+
+void CustomListViewPanel::SetHighlight(void const* highlight)
+{
+    for (auto&& i : mCells) {
+        i->SetHighlight(highlight);
+    }
 }
 
 // Define the repainting behaviour
@@ -73,15 +81,16 @@ void CustomListViewPanel::OnPaint(wxPaintEvent& event)
     dc.SetBackgroundMode(wxTRANSPARENT);
     dc.SetBackground(*wxLIGHT_GREY_BRUSH);
     dc.SetBrush(*wxWHITE_BRUSH);
+    dc.SetPen(*wxBLACK_PEN);
     dc.Clear();
     // do something special for selected; find out it's height;
-    auto selected_height = (m_selected < mContCells.size()) ? mContCells.at(m_selected)->Height() : 0;
+    auto selected_height = (m_selected < mCells.size()) ? mCells.at(m_selected)->Height() : 0;
     // create a series of bitmaps, and draw them one at a time
     auto offset = GetViewStart();
     auto x_start = -offset.x;
     auto y_start = -offset.y;
     // draw the non-selected first;
-    for (auto i = 0u; i < mContCells.size(); ++i) {
+    for (auto i = 0u; i < mCells.size(); ++i) {
         dc.DrawLine(x_start, y_start, x_start + 0xFFFF, y_start);
         if (m_selected == i) {
             if (!m_dragging || (m_lastLocation.y >= y_start && m_lastLocation.y < (y_start + selected_height))) {
@@ -89,50 +98,60 @@ void CustomListViewPanel::OnPaint(wxPaintEvent& event)
             }
             continue;
         }
-        if ((m_selected < mContCells.size()) && m_dragging && (m_lastLocation.y >= y_start && m_lastLocation.y < (y_start + selected_height))) {
+        if ((m_selected < mCells.size()) && m_dragging && (m_lastLocation.y >= y_start && m_lastLocation.y < (y_start + selected_height))) {
             // make a hole for the thing
             y_start += selected_height;
         }
         dc.SetDeviceOrigin(x_start, y_start);
-        mContCells.at(i)->DrawToDC(dc);
+        mCells.at(i)->DrawToDC(dc);
         dc.SetDeviceOrigin(0, 0);
-        y_start += mContCells.at(i)->Height();
+        y_start += mCells.at(i)->Height();
     }
     dc.DrawLine(x_start, y_start, x_start + 0xFFFF, y_start);
 
     // draw the selected now
-    x_start = 0;
-    y_start = 0;
-    for (auto i = 0u; (m_selected < mContCells.size()) && i < mContCells.size(); ++i) {
+    x_start = -offset.x;
+    y_start = -offset.y;
+    for (auto i = 0u; (m_selected < mCells.size()) && i < mCells.size(); ++i) {
         if (i != m_selected) {
-            y_start += mContCells.at(i)->Height();
+            y_start += mCells.at(i)->Height();
             continue;
         }
         auto&& current_brush = dc.GetBrush();
-        dc.SetBrush(mConfig.Get_ContCellBrushAndPen(COLOR_CONTCELLS_HIGHLIGHT).first);
+        dc.SetBrush(wxBrush(wxT("GREY")));
         auto y_delta = m_lastLocation.y - m_firstPress.y;
-        auto height = mContCells.at(i)->Height();
+        auto height = mCells.at(i)->Height();
         dc.DrawRectangle(x_start, y_start + y_delta, 0xFFFF, height);
         dc.SetBrush(current_brush);
         dc.SetDeviceOrigin(x_start, y_start + y_delta);
-        mContCells.at(i)->DrawToDC(dc);
+        mCells.at(i)->DrawToDC(dc);
         dc.SetDeviceOrigin(0, 0);
-        y_start += mContCells.at(i)->Height();
+        y_start += mCells.at(i)->Height();
     }
 }
 
-// Define the repainting behaviour
 size_t CustomListViewPanel::WhichCell(wxPoint const& point) const
 {
     auto y_start = 0;
     auto which_cell = 0ul;
-    for (; which_cell < mContCells.size(); ++which_cell) {
-        if ((point.y >= y_start) && (point.y < (y_start + mContCells.at(which_cell)->Height()))) {
+    for (; which_cell < mCells.size(); ++which_cell) {
+        if ((point.y >= y_start) && (point.y < (y_start + mCells.at(which_cell)->Height()))) {
             break;
         }
-        y_start += mContCells.at(which_cell)->Height();
+        y_start += mCells.at(which_cell)->Height();
     }
-    return int(which_cell);
+    return which_cell;
+}
+
+int CustomListViewPanel::HeightToCell(int which) const
+{
+    auto iter = mCells.begin();
+    auto result = 0;
+    while (which-- && iter != mCells.end()) {
+        result += (*iter)->Height();
+        ++iter;
+    }
+    return result;
 }
 
 void CustomListViewPanel::OnLeftDownMouseEvent(wxMouseEvent& event)
@@ -143,6 +162,22 @@ void CustomListViewPanel::OnLeftDownMouseEvent(wxMouseEvent& event)
     auto which_cell = WhichCell(event.GetPosition());
     m_selected = which_cell;
     m_dragging = true;
+    if (which_cell < mCells.size()) {
+        auto mouse_click = event.GetPosition();
+        mouse_click.y -= HeightToCell(which_cell);
+        mCells.at(which_cell)->OnClick(mouse_click);
+    }
+    Refresh();
+}
+
+void CustomListViewPanel::OnLeftDoubleClick(wxMouseEvent& event)
+{
+    //    printf("Mouse down @(%d, %d)\n", event.GetPosition().x, event.GetPosition().y);
+    // which cell would this be?
+    auto which_cell = WhichCell(event.GetPosition());
+    if (which_cell < mCells.size()) {
+        OnEditEntry(which_cell);
+    }
     Refresh();
 }
 
@@ -177,10 +212,10 @@ void CustomListViewPanel::OnChar(wxKeyEvent& event)
     // ignore keypresses if dragging:
     if (m_dragging)
         return;
-    if (event.GetKeyCode() == WXK_UP && m_selected < mContCells.size() && m_selected > 0) {
+    if (event.GetKeyCode() == WXK_UP && m_selected < mCells.size() && m_selected > 0) {
         --m_selected;
     }
-    else if (event.GetKeyCode() == WXK_DOWN && m_selected < (mContCells.size() - 1)) {
+    else if (event.GetKeyCode() == WXK_DOWN && m_selected < (mCells.size() - 1)) {
         ++m_selected;
     }
     else if (event.GetKeyCode() == WXK_RETURN) {
@@ -191,7 +226,7 @@ void CustomListViewPanel::OnChar(wxKeyEvent& event)
         if (!event.ShiftDown()) {
             ++m_selected;
         }
-        OnNewEntry(std::min(mContCells.size(), m_selected));
+        OnNewEntry(std::min(mCells.size(), m_selected));
     }
     else if (event.GetKeyCode() == WXK_DELETE || event.GetKeyCode() == WXK_NUMPAD_DELETE || event.GetKeyCode() == WXK_BACK) {
         OnDeleteEntry(m_selected);
@@ -203,6 +238,10 @@ void CustomListViewPanel::OnChar(wxKeyEvent& event)
 }
 
 void CustomListViewPanel::OnNewEntry(int cell)
+{
+}
+
+void CustomListViewPanel::OnEditEntry(int cell)
 {
 }
 

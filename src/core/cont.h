@@ -66,9 +66,13 @@ enum class ContType {
     direction,
     steptype,
     point,
+    unset,
 };
 
+// DrawableCont is a structure that describes the continuity for drawing
 struct DrawableCont {
+    ContToken const* self_ptr;
+    ContToken* parent_ptr;
     ContType type = ContType::procedure;
     std::string description;
     std::vector<DrawableCont> args;
@@ -79,8 +83,13 @@ public:
     ContToken();
     virtual ~ContToken() = default;
     virtual std::ostream& Print(std::ostream&) const;
+    void SetParentPtr(ContToken* p) { parent_ptr = p; }
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v);
 
     int line, col;
+
+protected:
+    ContToken* parent_ptr = nullptr;
 
 private:
     friend bool operator==(ContToken const& lhs, ContToken const& rhs);
@@ -112,7 +121,7 @@ class ContPoint : public ContToken {
     using super = ContToken;
 
 public:
-    ContPoint() {}
+    ContPoint() = default;
     virtual Coord Get(AnimateCompile& anim) const;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const;
@@ -134,11 +143,29 @@ private:
     }
 };
 
+class ContPointUnset : public ContPoint {
+    using super = ContPoint;
+
+public:
+    virtual std::ostream& Print(std::ostream&) const override;
+    virtual DrawableCont GetDrawableCont() const override;
+    virtual std::unique_ptr<ContPoint> clone() const override;
+
+private:
+    friend class boost::serialization::access;
+    template <class Archive>
+    void serialize(Archive& ar, const unsigned int version)
+    {
+        // serialize base class information
+        ar& boost::serialization::base_object<super>(*this);
+    }
+};
+
 class ContStartPoint : public ContPoint {
     using super = ContPoint;
 
 public:
-    ContStartPoint() {}
+    ContStartPoint() = default;
     virtual Coord Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
@@ -164,7 +191,7 @@ class ContNextPoint : public ContPoint {
     using super = ContPoint;
 
 public:
-    ContNextPoint() {}
+    ContNextPoint() = default;
     virtual Coord Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
@@ -190,10 +217,7 @@ class ContRefPoint : public ContPoint {
     using super = ContPoint;
 
 public:
-    ContRefPoint(unsigned n)
-        : refnum(n)
-    {
-    }
+    ContRefPoint(unsigned n);
     virtual Coord Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
@@ -201,10 +225,7 @@ public:
 
 private:
     // default constructor for serialization
-    ContRefPoint()
-        : refnum(0)
-    {
-    }
+    ContRefPoint();
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -227,7 +248,7 @@ class ContValue : public ContToken {
     using super = ContToken;
 
 public:
-    ContValue() {}
+    ContValue() = default;
     virtual float Get(AnimateCompile& anim) const = 0;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const = 0;
@@ -243,14 +264,30 @@ private:
     }
 };
 
+class ContValueUnset : public ContValue {
+    using super = ContValue;
+
+public:
+    virtual float Get(AnimateCompile& anim) const override { return 0; }
+    virtual std::ostream& Print(std::ostream&) const override;
+    virtual DrawableCont GetDrawableCont() const override;
+    virtual std::unique_ptr<ContValue> clone() const override;
+
+private:
+    friend class boost::serialization::access;
+    template <class Archive>
+    void serialize(Archive& ar, const unsigned int version)
+    {
+        // serialize base class information
+        ar& boost::serialization::base_object<super>(*this);
+    }
+};
+
 class ContValueFloat : public ContValue {
     using super = ContValue;
 
 public:
-    ContValueFloat(float v)
-        : val(v)
-    {
-    }
+    ContValueFloat(float v);
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
@@ -258,10 +295,7 @@ public:
 
 private:
     // default constructor for serialization
-    ContValueFloat()
-        : val(0)
-    {
-    }
+    ContValueFloat();
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -284,10 +318,7 @@ class ContValueDefined : public ContValue {
     using super = ContValue;
 
 public:
-    ContValueDefined(ContDefinedValue v)
-        : val(v)
-    {
-    }
+    ContValueDefined(ContDefinedValue v);
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
@@ -295,10 +326,7 @@ public:
 
 private:
     // default constructor for serialization
-    ContValueDefined()
-        : val(CC_N)
-    {
-    }
+    ContValueDefined();
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -321,24 +349,17 @@ class ContValueAdd : public ContValue {
     using super = ContValue;
 
 public:
-    ContValueAdd(ContValue* v1, ContValue* v2)
-        : val1(v1)
-        , val2(v2)
-    {
-    }
-    ContValueAdd(std::unique_ptr<ContValue> v1, std::unique_ptr<ContValue> v2)
-        : val1(std::move(v1))
-        , val2(std::move(v2))
-    {
-    }
+    ContValueAdd(ContValue* v1, ContValue* v2);
+    ContValueAdd(std::unique_ptr<ContValue> v1, std::unique_ptr<ContValue> v2);
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContValue> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContValueAdd() {}
+    ContValueAdd() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -363,24 +384,17 @@ class ContValueSub : public ContValue {
     using super = ContValue;
 
 public:
-    ContValueSub(ContValue* v1, ContValue* v2)
-        : val1(v1)
-        , val2(v2)
-    {
-    }
-    ContValueSub(std::unique_ptr<ContValue> v1, std::unique_ptr<ContValue> v2)
-        : val1(std::move(v1))
-        , val2(std::move(v2))
-    {
-    }
+    ContValueSub(ContValue* v1, ContValue* v2);
+    ContValueSub(std::unique_ptr<ContValue> v1, std::unique_ptr<ContValue> v2);
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContValue> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContValueSub() {}
+    ContValueSub() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -405,24 +419,17 @@ class ContValueMult : public ContValue {
     using super = ContValue;
 
 public:
-    ContValueMult(ContValue* v1, ContValue* v2)
-        : val1(v1)
-        , val2(v2)
-    {
-    }
-    ContValueMult(std::unique_ptr<ContValue> v1, std::unique_ptr<ContValue> v2)
-        : val1(std::move(v1))
-        , val2(std::move(v2))
-    {
-    }
+    ContValueMult(ContValue* v1, ContValue* v2);
+    ContValueMult(std::unique_ptr<ContValue> v1, std::unique_ptr<ContValue> v2);
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContValue> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContValueMult() {}
+    ContValueMult() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -447,24 +454,17 @@ class ContValueDiv : public ContValue {
     using super = ContValue;
 
 public:
-    ContValueDiv(ContValue* v1, ContValue* v2)
-        : val1(v1)
-        , val2(v2)
-    {
-    }
-    ContValueDiv(std::unique_ptr<ContValue> v1, std::unique_ptr<ContValue> v2)
-        : val1(std::move(v1))
-        , val2(std::move(v2))
-    {
-    }
+    ContValueDiv(ContValue* v1, ContValue* v2);
+    ContValueDiv(std::unique_ptr<ContValue> v1, std::unique_ptr<ContValue> v2);
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContValue> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContValueDiv() {}
+    ContValueDiv() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -489,22 +489,17 @@ class ContValueNeg : public ContValue {
     using super = ContValue;
 
 public:
-    ContValueNeg(ContValue* v)
-        : val(v)
-    {
-    }
-    ContValueNeg(std::unique_ptr<ContValue> v)
-        : val(std::move(v))
-    {
-    }
+    ContValueNeg(ContValue* v);
+    ContValueNeg(std::unique_ptr<ContValue> v);
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContValue> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContValueNeg() {}
+    ContValueNeg() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -552,22 +547,16 @@ class ContValueVar : public ContValue {
     using super = ContValue;
 
 public:
-    ContValueVar(unsigned num)
-        : varnum(num)
-    {
-    }
+    ContValueVar(unsigned num);
     virtual float Get(AnimateCompile& anim) const override;
     void Set(AnimateCompile& anim, float v);
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContValue> clone() const override;
 
-private:
+protected:
     // default constructor for serialization
-    ContValueVar()
-        : varnum(0)
-    {
-    }
+    ContValueVar();
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -586,26 +575,40 @@ private:
     unsigned varnum;
 };
 
-class ContFuncDir : public ContValue {
-    using super = ContValue;
+class ContValueVarUnset : public ContValueVar {
+    using super = ContValueVar;
 
 public:
-    ContFuncDir(ContPoint* p)
-        : pnt(p)
-    {
-    }
-    ContFuncDir(std::unique_ptr<ContPoint> p)
-        : pnt(std::move(p))
-    {
-    }
-    virtual float Get(AnimateCompile& anim) const override;
+    virtual float Get(AnimateCompile& anim) const override { return 0; }
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContValue> clone() const override;
 
 private:
+    friend class boost::serialization::access;
+    template <class Archive>
+    void serialize(Archive& ar, const unsigned int version)
+    {
+        // serialize base class information
+        ar& boost::serialization::base_object<super>(*this);
+    }
+};
+
+class ContFuncDir : public ContValue {
+    using super = ContValue;
+
+public:
+    ContFuncDir(ContPoint* p);
+    ContFuncDir(std::unique_ptr<ContPoint> p);
+    virtual float Get(AnimateCompile& anim) const override;
+    virtual std::ostream& Print(std::ostream&) const override;
+    virtual DrawableCont GetDrawableCont() const override;
+    virtual std::unique_ptr<ContValue> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
+
+private:
     // default constructor for serialization
-    ContFuncDir() {}
+    ContFuncDir() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -628,24 +631,17 @@ class ContFuncDirFrom : public ContValue {
     using super = ContValue;
 
 public:
-    ContFuncDirFrom(ContPoint* start, ContPoint* end)
-        : pnt_start(start)
-        , pnt_end(end)
-    {
-    }
-    ContFuncDirFrom(std::unique_ptr<ContPoint> start, std::unique_ptr<ContPoint> end)
-        : pnt_start(std::move(start))
-        , pnt_end(std::move(end))
-    {
-    }
+    ContFuncDirFrom(ContPoint* start, ContPoint* end);
+    ContFuncDirFrom(std::unique_ptr<ContPoint> start, std::unique_ptr<ContPoint> end);
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContValue> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContFuncDirFrom() {}
+    ContFuncDirFrom() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -670,22 +666,17 @@ class ContFuncDist : public ContValue {
     using super = ContValue;
 
 public:
-    ContFuncDist(ContPoint* p)
-        : pnt(p)
-    {
-    }
-    ContFuncDist(std::unique_ptr<ContPoint> p)
-        : pnt(std::move(p))
-    {
-    }
+    ContFuncDist(ContPoint* p);
+    ContFuncDist(std::unique_ptr<ContPoint> p);
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContValue> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContFuncDist() {}
+    ContFuncDist() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -708,24 +699,17 @@ class ContFuncDistFrom : public ContValue {
     using super = ContValue;
 
 public:
-    ContFuncDistFrom(ContPoint* start, ContPoint* end)
-        : pnt_start(start)
-        , pnt_end(end)
-    {
-    }
-    ContFuncDistFrom(std::unique_ptr<ContPoint> start, std::unique_ptr<ContPoint> end)
-        : pnt_start(std::move(start))
-        , pnt_end(std::move(end))
-    {
-    }
+    ContFuncDistFrom(ContPoint* start, ContPoint* end);
+    ContFuncDistFrom(std::unique_ptr<ContPoint> start, std::unique_ptr<ContPoint> end);
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContValue> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContFuncDistFrom() {}
+    ContFuncDistFrom() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -750,26 +734,17 @@ class ContFuncEither : public ContValue {
     using super = ContValue;
 
 public:
-    ContFuncEither(ContValue* d1, ContValue* d2, ContPoint* p)
-        : dir1(d1)
-        , dir2(d2)
-        , pnt(p)
-    {
-    }
-    ContFuncEither(std::unique_ptr<ContValue> d1, std::unique_ptr<ContValue> d2, std::unique_ptr<ContPoint> p)
-        : dir1(std::move(d1))
-        , dir2(std::move(d2))
-        , pnt(std::move(p))
-    {
-    }
+    ContFuncEither(ContValue* d1, ContValue* d2, ContPoint* p);
+    ContFuncEither(std::unique_ptr<ContValue> d1, std::unique_ptr<ContValue> d2, std::unique_ptr<ContPoint> p);
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContValue> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContFuncEither() {}
+    ContFuncEither() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -796,22 +771,17 @@ class ContFuncOpp : public ContValue {
     using super = ContValue;
 
 public:
-    ContFuncOpp(ContValue* d)
-        : dir(d)
-    {
-    }
-    ContFuncOpp(std::unique_ptr<ContValue> d)
-        : dir(std::move(d))
-    {
-    }
+    ContFuncOpp(ContValue* d);
+    ContFuncOpp(std::unique_ptr<ContValue> d);
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContValue> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContFuncOpp() {}
+    ContFuncOpp() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -834,26 +804,17 @@ class ContFuncStep : public ContValue {
     using super = ContValue;
 
 public:
-    ContFuncStep(ContValue* beats, ContValue* blocksize, ContPoint* p)
-        : numbeats(beats)
-        , blksize(blocksize)
-        , pnt(p)
-    {
-    }
-    ContFuncStep(std::unique_ptr<ContValue> beats, std::unique_ptr<ContValue> blocksize, std::unique_ptr<ContPoint> p)
-        : numbeats(std::move(beats))
-        , blksize(std::move(blocksize))
-        , pnt(std::move(p))
-    {
-    }
+    ContFuncStep(ContValue* beats, ContValue* blocksize, ContPoint* p);
+    ContFuncStep(std::unique_ptr<ContValue> beats, std::unique_ptr<ContValue> blocksize, std::unique_ptr<ContPoint> p);
     virtual float Get(AnimateCompile& anim) const override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContValue> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContFuncStep() {}
+    ContFuncStep() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -880,11 +841,32 @@ class ContProcedure : public ContToken {
     using super = ContToken;
 
 public:
-    ContProcedure() {}
+    ContProcedure() = default;
     virtual void Compile(AnimateCompile& anim) = 0;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const = 0;
     virtual std::unique_ptr<ContProcedure> clone() const = 0;
+    virtual bool IsValid() const { return true; }
+
+private:
+    friend class boost::serialization::access;
+    template <class Archive>
+    void serialize(Archive& ar, const unsigned int version)
+    {
+        // serialize base class information
+        ar& boost::serialization::base_object<super>(*this);
+    }
+};
+
+class ContProcUnset : public ContProcedure {
+    using super = ContProcedure;
+
+public:
+    virtual void Compile(AnimateCompile& anim) override {}
+    virtual std::ostream& Print(std::ostream&) const override;
+    virtual DrawableCont GetDrawableCont() const override;
+    virtual std::unique_ptr<ContProcedure> clone() const override;
+    virtual bool IsValid() const override { return false; }
 
 private:
     friend class boost::serialization::access;
@@ -900,24 +882,19 @@ class ContProcSet : public ContProcedure {
     using super = ContProcedure;
 
 public:
-    ContProcSet(ContValueVar* vr, ContValue* v)
-        : var(vr)
-        , val(v)
-    {
-    }
-    ContProcSet(std::unique_ptr<ContValueVar> vr, std::unique_ptr<ContValue> v)
-        : var(std::move(vr))
-        , val(std::move(v))
-    {
-    }
+    ContProcSet(ContValueVar* vr, ContValue* v);
+    ContProcSet(std::unique_ptr<ContValueVar> vr, std::unique_ptr<ContValue> v);
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContProcedure> clone() const override;
+    struct ReplaceError_NotAVar : public std::exception {
+    };
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContProcSet() {}
+    ContProcSet() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -969,33 +946,18 @@ class ContProcCM : public ContProcedure {
 
 public:
     ContProcCM(ContPoint* p1, ContPoint* p2, ContValue* steps, ContValue* d1,
-        ContValue* d2, ContValue* beats)
-        : pnt1(p1)
-        , pnt2(p2)
-        , stps(steps)
-        , dir1(d1)
-        , dir2(d2)
-        , numbeats(beats)
-    {
-    }
+        ContValue* d2, ContValue* beats);
     ContProcCM(std::unique_ptr<ContPoint> p1, std::unique_ptr<ContPoint> p2, std::unique_ptr<ContValue> steps, std::unique_ptr<ContValue> d1,
-        std::unique_ptr<ContValue> d2, std::unique_ptr<ContValue> beats)
-        : pnt1(std::move(p1))
-        , pnt2(std::move(p2))
-        , stps(std::move(steps))
-        , dir1(std::move(d1))
-        , dir2(std::move(d2))
-        , numbeats(std::move(beats))
-    {
-    }
+        std::unique_ptr<ContValue> d2, std::unique_ptr<ContValue> beats);
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContProcedure> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContProcCM() {}
+    ContProcCM() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -1025,26 +987,17 @@ class ContProcDMCM : public ContProcedure {
     using super = ContProcedure;
 
 public:
-    ContProcDMCM(ContPoint* p1, ContPoint* p2, ContValue* beats)
-        : pnt1(p1)
-        , pnt2(p2)
-        , numbeats(beats)
-    {
-    }
-    ContProcDMCM(std::unique_ptr<ContPoint> p1, std::unique_ptr<ContPoint> p2, std::unique_ptr<ContValue> beats)
-        : pnt1(std::move(p1))
-        , pnt2(std::move(p2))
-        , numbeats(std::move(beats))
-    {
-    }
+    ContProcDMCM(ContPoint* p1, ContPoint* p2, ContValue* beats);
+    ContProcDMCM(std::unique_ptr<ContPoint> p1, std::unique_ptr<ContPoint> p2, std::unique_ptr<ContValue> beats);
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContProcedure> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContProcDMCM() {}
+    ContProcDMCM() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -1071,22 +1024,17 @@ class ContProcDMHS : public ContProcedure {
     using super = ContProcedure;
 
 public:
-    ContProcDMHS(ContPoint* p)
-        : pnt(p)
-    {
-    }
-    ContProcDMHS(std::unique_ptr<ContPoint> p)
-        : pnt(std::move(p))
-    {
-    }
+    ContProcDMHS(ContPoint* p);
+    ContProcDMHS(std::unique_ptr<ContPoint> p);
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContProcedure> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContProcDMHS() {}
+    ContProcDMHS() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -1110,24 +1058,17 @@ class ContProcEven : public ContProcedure {
     using super = ContProcedure;
 
 public:
-    ContProcEven(ContValue* steps, ContPoint* p)
-        : stps(steps)
-        , pnt(p)
-    {
-    }
-    ContProcEven(std::unique_ptr<ContValue> steps, std::unique_ptr<ContPoint> p)
-        : stps(std::move(steps))
-        , pnt(std::move(p))
-    {
-    }
+    ContProcEven(ContValue* steps, ContPoint* p);
+    ContProcEven(std::unique_ptr<ContValue> steps, std::unique_ptr<ContPoint> p);
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContProcedure> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContProcEven() {}
+    ContProcEven() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -1153,22 +1094,17 @@ class ContProcEWNS : public ContProcedure {
     using super = ContProcedure;
 
 public:
-    ContProcEWNS(ContPoint* p)
-        : pnt(p)
-    {
-    }
-    ContProcEWNS(std::unique_ptr<ContPoint> p)
-        : pnt(std::move(p))
-    {
-    }
+    ContProcEWNS(ContPoint* p);
+    ContProcEWNS(std::unique_ptr<ContPoint> p);
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContProcedure> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContProcEWNS() {}
+    ContProcEWNS() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -1193,31 +1129,18 @@ class ContProcFountain : public ContProcedure {
 
 public:
     ContProcFountain(ContValue* d1, ContValue* d2, ContValue* s1, ContValue* s2,
-        ContPoint* p)
-        : dir1(d1)
-        , dir2(d2)
-        , stepsize1(s1)
-        , stepsize2(s2)
-        , pnt(p)
-    {
-    }
+        ContPoint* p);
     ContProcFountain(std::unique_ptr<ContValue> d1, std::unique_ptr<ContValue> d2, std::unique_ptr<ContValue> s1, std::unique_ptr<ContValue> s2,
-        std::unique_ptr<ContPoint> p)
-        : dir1(std::move(d1))
-        , dir2(std::move(d2))
-        , stepsize1(std::move(s1))
-        , stepsize2(std::move(s2))
-        , pnt(std::move(p))
-    {
-    }
+        std::unique_ptr<ContPoint> p);
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContProcedure> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContProcFountain() {}
+    ContProcFountain() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -1247,24 +1170,17 @@ class ContProcFM : public ContProcedure {
     using super = ContProcedure;
 
 public:
-    ContProcFM(ContValue* steps, ContValue* d)
-        : stps(steps)
-        , dir(d)
-    {
-    }
-    ContProcFM(std::unique_ptr<ContValue> steps, std::unique_ptr<ContValue> d)
-        : stps(std::move(steps))
-        , dir(std::move(d))
-    {
-    }
+    ContProcFM(ContValue* steps, ContValue* d);
+    ContProcFM(std::unique_ptr<ContValue> steps, std::unique_ptr<ContValue> d);
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContProcedure> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContProcFM() {}
+    ContProcFM() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -1289,22 +1205,17 @@ class ContProcFMTO : public ContProcedure {
     using super = ContProcedure;
 
 public:
-    ContProcFMTO(ContPoint* p)
-        : pnt(p)
-    {
-    }
-    ContProcFMTO(std::unique_ptr<ContPoint> p)
-        : pnt(std::move(p))
-    {
-    }
+    ContProcFMTO(ContPoint* p);
+    ContProcFMTO(std::unique_ptr<ContPoint> p);
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContProcedure> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContProcFMTO() {}
+    ContProcFMTO() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -1328,22 +1239,17 @@ class ContProcGrid : public ContProcedure {
     using super = ContProcedure;
 
 public:
-    ContProcGrid(ContValue* g)
-        : grid(g)
-    {
-    }
-    ContProcGrid(std::unique_ptr<ContValue> g)
-        : grid(std::move(g))
-    {
-    }
+    ContProcGrid(ContValue* g);
+    ContProcGrid(std::unique_ptr<ContValue> g);
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContProcedure> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContProcGrid() {}
+    ContProcGrid() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -1367,26 +1273,17 @@ class ContProcHSCM : public ContProcedure {
     using super = ContProcedure;
 
 public:
-    ContProcHSCM(ContPoint* p1, ContPoint* p2, ContValue* beats)
-        : pnt1(p1)
-        , pnt2(p2)
-        , numbeats(beats)
-    {
-    }
-    ContProcHSCM(std::unique_ptr<ContPoint> p1, std::unique_ptr<ContPoint> p2, std::unique_ptr<ContValue> beats)
-        : pnt1(std::move(p1))
-        , pnt2(std::move(p2))
-        , numbeats(std::move(beats))
-    {
-    }
+    ContProcHSCM(ContPoint* p1, ContPoint* p2, ContValue* beats);
+    ContProcHSCM(std::unique_ptr<ContPoint> p1, std::unique_ptr<ContPoint> p2, std::unique_ptr<ContValue> beats);
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContProcedure> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContProcHSCM() {}
+    ContProcHSCM() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -1413,22 +1310,17 @@ class ContProcHSDM : public ContProcedure {
     using super = ContProcedure;
 
 public:
-    ContProcHSDM(ContPoint* p)
-        : pnt(p)
-    {
-    }
-    ContProcHSDM(std::unique_ptr<ContPoint> p)
-        : pnt(std::move(p))
-    {
-    }
+    ContProcHSDM(ContPoint* p);
+    ContProcHSDM(std::unique_ptr<ContPoint> p);
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContProcedure> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContProcHSDM() {}
+    ContProcHSDM() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -1452,22 +1344,17 @@ class ContProcMagic : public ContProcedure {
     using super = ContProcedure;
 
 public:
-    ContProcMagic(ContPoint* p)
-        : pnt(p)
-    {
-    }
-    ContProcMagic(std::unique_ptr<ContPoint> p)
-        : pnt(std::move(p))
-    {
-    }
+    ContProcMagic(ContPoint* p);
+    ContProcMagic(std::unique_ptr<ContPoint> p);
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContProcedure> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContProcMagic() {}
+    ContProcMagic() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -1492,29 +1379,18 @@ class ContProcMarch : public ContProcedure {
 
 public:
     ContProcMarch(ContValue* stepsize, ContValue* steps, ContValue* d,
-        ContValue* face)
-        : stpsize(stepsize)
-        , stps(steps)
-        , dir(d)
-        , facedir(face)
-    {
-    }
+        ContValue* face);
     ContProcMarch(std::unique_ptr<ContValue> stepsize, std::unique_ptr<ContValue> steps, std::unique_ptr<ContValue> d,
-        std::unique_ptr<ContValue> face)
-        : stpsize(std::move(stepsize))
-        , stps(std::move(steps))
-        , dir(std::move(d))
-        , facedir(std::move(face))
-    {
-    }
+        std::unique_ptr<ContValue> face);
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContProcedure> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContProcMarch() {}
+    ContProcMarch() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -1541,24 +1417,17 @@ class ContProcMT : public ContProcedure {
     using super = ContProcedure;
 
 public:
-    ContProcMT(ContValue* beats, ContValue* d)
-        : numbeats(beats)
-        , dir(d)
-    {
-    }
-    ContProcMT(std::unique_ptr<ContValue> beats, std::unique_ptr<ContValue> d)
-        : numbeats(std::move(beats))
-        , dir(std::move(d))
-    {
-    }
+    ContProcMT(ContValue* beats, ContValue* d);
+    ContProcMT(std::unique_ptr<ContValue> beats, std::unique_ptr<ContValue> d);
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContProcedure> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContProcMT() {}
+    ContProcMT() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -1583,22 +1452,17 @@ class ContProcMTRM : public ContProcedure {
     using super = ContProcedure;
 
 public:
-    ContProcMTRM(ContValue* d)
-        : dir(d)
-    {
-    }
-    ContProcMTRM(std::unique_ptr<ContValue> d)
-        : dir(std::move(d))
-    {
-    }
+    ContProcMTRM(ContValue* d);
+    ContProcMTRM(std::unique_ptr<ContValue> d);
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContProcedure> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContProcMTRM() {}
+    ContProcMTRM() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -1622,22 +1486,17 @@ class ContProcNSEW : public ContProcedure {
     using super = ContProcedure;
 
 public:
-    ContProcNSEW(ContPoint* p)
-        : pnt(p)
-    {
-    }
-    ContProcNSEW(std::unique_ptr<ContPoint> p)
-        : pnt(std::move(p))
-    {
-    }
+    ContProcNSEW(ContPoint* p);
+    ContProcNSEW(std::unique_ptr<ContPoint> p);
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContProcedure> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContProcNSEW() {}
+    ContProcNSEW() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {
@@ -1661,26 +1520,17 @@ class ContProcRotate : public ContProcedure {
     using super = ContProcedure;
 
 public:
-    ContProcRotate(ContValue* angle, ContValue* steps, ContPoint* p)
-        : ang(angle)
-        , stps(steps)
-        , pnt(p)
-    {
-    }
-    ContProcRotate(std::unique_ptr<ContValue> angle, std::unique_ptr<ContValue> steps, std::unique_ptr<ContPoint> p)
-        : ang(std::move(angle))
-        , stps(std::move(steps))
-        , pnt(std::move(p))
-    {
-    }
+    ContProcRotate(ContValue* angle, ContValue* steps, ContPoint* p);
+    ContProcRotate(std::unique_ptr<ContValue> angle, std::unique_ptr<ContValue> steps, std::unique_ptr<ContPoint> p);
     virtual void Compile(AnimateCompile& anim) override;
     virtual std::ostream& Print(std::ostream&) const override;
     virtual DrawableCont GetDrawableCont() const override;
     virtual std::unique_ptr<ContProcedure> clone() const override;
+    virtual void replace(ContToken const* which, std::unique_ptr<ContToken> v) override;
 
 private:
     // default constructor for serialization
-    ContProcRotate() {}
+    ContProcRotate() = default;
 
     virtual bool is_equal(ContToken const& other) const override
     {

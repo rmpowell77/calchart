@@ -26,17 +26,16 @@
 #include <set>
 #include <vector>
 
-class CalChartConfiguration;
-
-// the idea is that we will have a collection of smaller cells, that can be moved around.
-// View for linking CalChartDoc with ContinuityEditor
-class CustomListViewCell {
+// Drawable Cells are anything that is a small drawing surface
+class DrawableCell {
 public:
-    CustomListViewCell(){};
-    virtual ~CustomListViewCell() = default;
+    DrawableCell() = default;
+    virtual ~DrawableCell() = default;
     virtual void DrawToDC(wxDC&) = 0;
     virtual int Height() const = 0;
     virtual int Width() const = 0;
+    virtual void OnClick(wxPoint const&) = 0;
+    virtual void SetHighlight(void const*) = 0;
 };
 
 // the idea is that we will have a collection of smaller cells, that can be moved around.
@@ -46,34 +45,38 @@ class CustomListViewPanel : public wxScrolledWindow {
 
 public:
     // Basic functions
-    CustomListViewPanel(CalChartConfiguration const& config,
-        wxWindow* parent,
+    CustomListViewPanel(wxWindow* parent,
         wxWindowID winid = wxID_ANY,
         const wxPoint& pos = wxDefaultPosition,
-        const wxSize& size = wxDefaultSize);
+        const wxSize& size = wxDefaultSize,
+        long style = wxScrolledWindowStyle,
+        const wxString& name = wxPanelNameStr);
     virtual ~CustomListViewPanel() = default;
     void OnPaint(wxPaintEvent& event);
     void OnChar(wxKeyEvent& event);
+    void OnLeftDoubleClick(wxMouseEvent& event);
     void OnLeftDownMouseEvent(wxMouseEvent& event);
     void OnLeftUpMouseEvent(wxMouseEvent& event);
     void OnMouseMove(wxMouseEvent& event);
     void OnEraseBackground(wxEraseEvent& event);
     void SetSelection(int which) { m_selected = static_cast<size_t>(which); }
     auto GetSelection() const { return m_selected; }
-    void SetContCells(std::vector<std::unique_ptr<CustomListViewCell> > cells);
+    void SetCells(std::vector<std::unique_ptr<DrawableCell> > cells);
+    void SetHighlight(void const* highlight);
 
 private:
     virtual void OnNewEntry(int cell);
+    virtual void OnEditEntry(int cell);
     virtual void OnDeleteEntry(int cell);
     virtual void OnMoveEntry(int start_cell, int end_cell);
     size_t WhichCell(wxPoint const& point) const;
+    int HeightToCell(int which) const;
 
-    std::vector<std::unique_ptr<CustomListViewCell> > mContCells;
+    std::vector<std::unique_ptr<DrawableCell> > mCells;
     wxPoint m_firstPress;
     wxPoint m_lastLocation;
     size_t m_selected;
     bool m_dragging;
-    CalChartConfiguration const& mConfig;
 
     DECLARE_EVENT_TABLE()
 };

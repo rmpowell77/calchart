@@ -23,13 +23,12 @@
 #pragma once
 
 #include "calchartdoc.h"
-#include "cont_ui_cell.h"
+#include "cont_box_draw.h"
 
 #include <wx/docview.h>
 #include <wx/dialog.h>
 
 class ContinuityEditor;
-class FancyTextWin;
 class ContinuityEditorCanvas;
 class ContinuityEditorPerCont;
 class ContinuityEditorView;
@@ -39,12 +38,18 @@ class ContinuityEditorCanvas : public CustomListViewPanel {
 
 public:
     // Basic functions
-    ContinuityEditorCanvas(CalChartDoc* doc, SYMBOL_TYPE sym, CalChartConfiguration& config, wxWindow* parent);
+    ContinuityEditorCanvas(CalChartDoc* doc, SYMBOL_TYPE sym, CalChartConfiguration& config, wxWindow* parent,
+        wxWindowID winid = wxID_ANY,
+        const wxPoint& pos = wxDefaultPosition,
+        const wxSize& size = wxDefaultSize,
+        long style = wxScrolledWindowStyle,
+        const wxString& name = wxPanelNameStr);
     virtual ~ContinuityEditorCanvas() = default;
     void DoSetContinuity(CalChart::Continuity const& new_cont);
 
 private:
     virtual void OnNewEntry(int cell) override;
+    virtual void OnEditEntry(int cell) override;
     virtual void OnDeleteEntry(int cell) override;
     virtual void OnMoveEntry(int start_cell, int end_cell) override;
 
@@ -71,7 +76,9 @@ class ContinuityEditor : public wxScrolledWindow {
 public:
     ContinuityEditor(CalChartDoc* dcr, wxWindow* parent, wxWindowID id = wxID_ANY,
         const wxPoint& pos = wxDefaultPosition,
-        const wxSize& size = wxDefaultSize);
+        const wxSize& size = wxDefaultSize,
+        long style = wxScrolledWindowStyle,
+        const wxString& name = wxPanelNameStr);
     ~ContinuityEditor();
 
     void OnCmdHelp(wxCommandEvent& event);

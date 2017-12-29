@@ -33,6 +33,7 @@
 #include "animatecompile.h"
 #include "cont.h"
 #include "custom_listview.h"
+#include "cont_composer.h"
 
 #include <regex>
 
@@ -50,22 +51,32 @@ EVT_KILL_FOCUS(ContinuityEditorCanvas::DoKillFocus)
 END_EVENT_TABLE()
 
 // Define a constructor for field canvas
-ContinuityEditorCanvas::ContinuityEditorCanvas(CalChartDoc* doc, SYMBOL_TYPE sym, CalChartConfiguration& config, wxWindow* parent)
-    : super(config, parent, wxID_ANY, wxDefaultPosition, wxSize{ 200, 200 })
+ContinuityEditorCanvas::ContinuityEditorCanvas(CalChartDoc* doc, SYMBOL_TYPE sym, CalChartConfiguration& config, wxWindow* parent,
+    wxWindowID winid,
+    const wxPoint& pos,
+    const wxSize& size,
+    long style,
+    const wxString& name)
+    : super(parent, winid, pos, size, style, name)
     , mDoc(doc)
     , mSym(sym)
     , mConfig(config)
 {
+    // make room for about 5
+    auto current_size = GetMinSize();
+    current_size.y = ContinuityBoxDrawer::GetHeight(config);
+    current_size.y *= 5;
+    SetMinSize(current_size);
 }
 
 void ContinuityEditorCanvas::DoSetContinuity(CalChart::Continuity const& text)
 {
-    std::vector<std::unique_ptr<CustomListViewCell> > contCells;
+    std::vector<std::unique_ptr<DrawableCell> > contCells;
     mCont = text;
     for (auto&& i : mCont.GetParsedContinuity()) {
-        contCells.emplace_back(std::make_unique<ContinuityEditorCell>(*i, mConfig));
+        contCells.emplace_back(std::make_unique<ContinuityBoxDrawer>(i->GetDrawableCont(), mConfig));
     }
-    SetContCells(std::move(contCells));
+    SetCells(std::move(contCells));
     Refresh();
 }
 
@@ -83,11 +94,7 @@ void ContinuityEditorCanvas::OnNewEntry(int cell)
 {
     if (!mDoc)
         return;
-    wxTextEntryDialog dialog(this,
-        wxEmptyString,
-        wxT("Enter new continuity"),
-        wxEmptyString,
-        wxOK | wxCANCEL);
+    ContComposerDialog dialog(nullptr, this);
 
     if (dialog.ShowModal() != wxID_OK) {
         return;
@@ -95,9 +102,28 @@ void ContinuityEditorCanvas::OnNewEntry(int cell)
     try {
         // if we have -1, that means push_back.
         auto copied_cont = do_cloning(mCont);
-        for (auto&& i : CalChart::Continuity::ParseContinuity(dialog.GetValue().ToStdString())) {
-            copied_cont.insert(copied_cont.begin() + cell++, std::move(i));
-        }
+        copied_cont.insert(copied_cont.begin() + cell, dialog.GetContinuity());
+        UpdateCont(CalChart::Continuity{ std::move(copied_cont) });
+    }
+    catch (std::runtime_error const& e) {
+        wxMessageBox(wxT("Error: ") + wxString{ e.what() }, wxT("Parsing Error"), wxOK | wxICON_INFORMATION, this);
+        return;
+    }
+}
+
+void ContinuityEditorCanvas::OnEditEntry(int cell)
+{
+    if (!mDoc)
+        return;
+    ContComposerDialog dialog(mCont.GetParsedContinuity().at(cell)->clone(), this);
+
+    if (dialog.ShowModal() != wxID_OK) {
+        return;
+    }
+    try {
+        // if we have -1, that means push_back.
+        auto copied_cont = do_cloning(mCont);
+        copied_cont.at(cell) = dialog.GetContinuity();
         UpdateCont(CalChart::Continuity{ std::move(copied_cont) });
     }
     catch (std::runtime_error const& e) {
@@ -173,7 +199,7 @@ ContinuityEditorPerCont::ContinuityEditorPerCont(CalChartDoc* doc, SYMBOL_TYPE s
     auto topsizer = new wxBoxSizer(wxVERTICAL);
     SetSizer(topsizer);
 
-    auto staticText = new wxStaticText(this, wxID_STATIC, GetNameForSymbol(sym), wxDefaultPosition, wxDefaultSize, wxALIGN_LEFT);
+    auto staticText = new wxStaticText(this, wxID_STATIC, GetLongNameForSymbol(sym), wxDefaultPosition, wxDefaultSize, wxALIGN_LEFT);
     topsizer->Add(staticText, 0, wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
 
     // here's a canvas
@@ -205,8 +231,8 @@ BEGIN_EVENT_TABLE(ContinuityEditor, wxScrolledWindow)
 EVT_BUTTON(wxID_HELP, ContinuityEditor::OnCmdHelp)
 END_EVENT_TABLE()
 
-ContinuityEditor::ContinuityEditor(CalChartDoc* doc, wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size)
-    : wxScrolledWindow(parent, id, pos, size)
+ContinuityEditor::ContinuityEditor(CalChartDoc* doc, wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style, const wxString& name)
+    : wxScrolledWindow(parent, id, pos, size, style, name)
     , mDoc(doc)
 {
     mView = std::make_unique<ContinuityEditorView>();

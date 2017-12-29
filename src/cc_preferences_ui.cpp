@@ -31,6 +31,8 @@
 #include "cc_shapes.h"
 #include "draw.h"
 #include "cont_ui.h"
+#include "cont.h"
+#include "cont_composer.h"
 
 #include <wx/colordlg.h>
 #include <wx/stattext.h>
@@ -61,6 +63,7 @@ using namespace CalChart;
 // convience sizers to change the view behavior in all at once.
 static wxSizerFlags sBasicSizerFlags;
 static wxSizerFlags sLeftBasicSizerFlags;
+static wxSizerFlags sRightBasicSizerFlags;
 static wxSizerFlags sExpandSizerFlags;
 
 static void AddTextboxWithCaption(wxWindow* parent, wxBoxSizer* verticalsizer,
@@ -1570,6 +1573,7 @@ void SpringShowModeSetup::OnCmdChoice(wxCommandEvent&)
     TransferDataToWindow();
 }
 
+////////////////
 class ContCellSetup : public PreferencePage {
     DECLARE_CLASS(ContCellSetup)
     DECLARE_EVENT_TABLE()
@@ -1632,6 +1636,16 @@ END_EVENT_TABLE()
 
 IMPLEMENT_CLASS(ContCellSetup, PreferencePage)
 
+template <typename T>
+static auto do_cloning(T const& cont)
+{
+    std::vector<std::unique_ptr<ContProcedure> > copied_cont;
+    for (auto&& i : cont.GetParsedContinuity()) {
+        copied_cont.emplace_back(i->clone());
+    }
+    return copied_cont;
+}
+
 void ContCellSetup::CreateControls()
 {
     auto topsizer = new wxBoxSizer(wxVERTICAL);
@@ -1689,7 +1703,10 @@ void ContCellSetup::CreateControls()
 
     auto canvas = new ContinuityEditorCanvas(nullptr, SYMBOL_PLAIN, mConfig, this);
     topsizer->Add(canvas, 1, wxEXPAND);
-    canvas->DoSetContinuity(CalChart::Continuity{ "ewns np\nX = distfrom(sp r2)\nmt (24-X)w\nmarch gv dist(np) dir(np) w\nmtrm e" });
+    auto basic_cont = CalChart::Continuity{ "ewns np\nX = distfrom(sp r2)\nmt (24-X)w\nmarch gv dist(np) dir(np) w\nmtrm e" };
+    auto clonedOut = do_cloning(basic_cont);
+    clonedOut.emplace_back(std::make_unique<CalChart::ContProcMT>(std::make_unique<CalChart::ContValueUnset>(), std::make_unique<CalChart::ContValueUnset>()));
+    canvas->DoSetContinuity(CalChart::Continuity{ std::move(clonedOut) });
 
     TransferDataToWindow();
 }
@@ -1793,6 +1810,8 @@ void ContCellSetup::OnCmdChooseNewColor(wxCommandEvent&)
     Refresh();
 }
 
+////////////////
+
 BEGIN_EVENT_TABLE(CalChartPreferences, wxDialog)
 EVT_BUTTON(wxID_RESET, CalChartPreferences::OnCmdResetAll)
 END_EVENT_TABLE()
@@ -1819,6 +1838,7 @@ void CalChartPreferences::Init()
 {
     sBasicSizerFlags.Border(wxALL, 2).Center().Proportion(0);
     sLeftBasicSizerFlags.Border(wxALL, 2).Left().Proportion(0);
+    sRightBasicSizerFlags.Border(wxALL, 2).Right().Proportion(0);
     sExpandSizerFlags.Border(wxALL, 2).Center().Proportion(0);
 }
 
@@ -1845,6 +1865,8 @@ void CalChartPreferences::CreateControls()
     mNotebook = new wxNotebook(this, wxID_ANY);
     topsizer->Add(mNotebook, sBasicSizerFlags);
 
+    wxPanel* window5 = new ContCellSetup(mConfig, mNotebook, wxID_ANY);
+    mNotebook->AddPage(window5, wxT("Continuity"));
     wxPanel* window0 = new DrawingSetup(mConfig, mNotebook, wxID_ANY);
     mNotebook->AddPage(window0, wxT("Drawing"));
     wxPanel* window1 = new GeneralSetup(mConfig, mNotebook, wxID_ANY);
@@ -1855,8 +1877,6 @@ void CalChartPreferences::CreateControls()
     mNotebook->AddPage(window3, wxT("Show Mode Setup"));
     wxPanel* window4 = new SpringShowModeSetup(mConfig, mNotebook, wxID_ANY);
     mNotebook->AddPage(window4, wxT("SpringShow Mode Setup"));
-    wxPanel* window5 = new ContCellSetup(mConfig, mNotebook, wxID_ANY);
-    mNotebook->AddPage(window5, wxT("Continuity"));
 
     // the buttons on the bottom
     wxBoxSizer* okCancelBox = new wxBoxSizer(wxHORIZONTAL);

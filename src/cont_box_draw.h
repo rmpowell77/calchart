@@ -1,10 +1,5 @@
 #pragma once
 /*
- * cont_ui_cell.h
- * Header for continuity editor cell
- */
-
-/*
    Copyright (C) 1995-2011  Garrick Brian Meeker, Richard Michael Powell
 
    This program is free software: you can redistribute it and/or modify
@@ -25,18 +20,32 @@
 
 class CalChartConfiguration;
 namespace CalChart {
-class ContProcedure;
+class ContToken;
+struct DrawableCont;
 }
 
-class ContinuityEditorCell : public CustomListViewCell {
+// class for drawing continuity in box form on a dc.
+
+class ContinuityBoxSubPartDrawer;
+
+class ContinuityBoxDrawer : public DrawableCell {
 public:
-    ContinuityEditorCell(CalChart::ContProcedure& proc, CalChartConfiguration const& config);
-    virtual ~ContinuityEditorCell() = default;
+    ContinuityBoxDrawer(CalChart::DrawableCont const& proc, CalChartConfiguration const& config, std::function<void(CalChart::DrawableCont const&)> action = nullptr);
+    virtual ~ContinuityBoxDrawer();
+    void SetHighlight(void const* ptr) override { mHighlight = ptr; }
     virtual void DrawToDC(wxDC& dc) override;
     virtual int Height() const override;
     virtual int Width() const override;
+    virtual void OnClick(wxPoint const&) override;
+
+    static int GetHeight(CalChartConfiguration const&);
 
 private:
-    CalChart::ContProcedure& mProc;
+    void OnLeftDownMouseEvent(wxMouseEvent& event);
+    void OnLeftUpMouseEvent(wxMouseEvent& event);
+
     CalChartConfiguration const& mConfig;
+    std::unique_ptr<ContinuityBoxSubPartDrawer> mContToken;
+    std::function<void(CalChart::DrawableCont const&)> mClickAction;
+    void const* mHighlight = nullptr;
 };

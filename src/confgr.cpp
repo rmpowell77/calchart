@@ -81,7 +81,7 @@ const std::tuple<wxString, wxString, int> ContCellColorInfo[COLOR_CONTCELLS_NUM]
     std::tuple<wxString, wxString, int>(wxT("CONT CELL DIRECTION"), wxT("MEDIUM ORCHID"), 1),
     std::tuple<wxString, wxString, int>(wxT("CONT CELL STEPTYPE"), wxT("SKY BLUE"), 1),
     std::tuple<wxString, wxString, int>(wxT("CONT CELL POINT"), wxT("GOLD"), 1),
-    std::tuple<wxString, wxString, int>(wxT("CONT CELL HIGHLIGHT"), wxT("GREY"), 1),
+    std::tuple<wxString, wxString, int>(wxT("CONT CELL UNSET"), wxT("WHITE"), 1),
 };
 
 ///// Show mode configuration /////
