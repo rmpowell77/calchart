@@ -3,4 +3,4 @@
 	url = https://github.com/saebyn/munkres-cpp.git
 [submodule "wxWidgets"]
 	path = wxWidgets
-	url = https://github.com/wxWidgets/wxWidgets.git
+	url = https://github.com/rmpowell77/wxWidgets.git
