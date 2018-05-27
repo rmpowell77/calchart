@@ -1,9 +1,8 @@
 os: osx
 
 before_install:
-  - brew update
-  - brew outdated xctool || brew upgrade xctool
+  - gem install xcpretty
 
 script:
-    - xctool -project build-macos/CalChart.xcodeproj -scheme All -arch x86_64 -configuration Debug
+    - xcodebuild -project build-macos/CalChart.xcodeproj -scheme All -arch x86_64 -configuration Debug | xcpretty
 
