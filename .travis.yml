@@ -17,4 +17,5 @@ script:
     # using the set command as recommended on
     # https://github.com/supermarin/xcpretty
     - set -o pipefail && xcodebuild -project build-macos/CalChart.xcodeproj -scheme All -arch x86_64 -configuration Debug | xcpretty
+    - set -o pipefail && xcodebuild -project build-macos/CalChart.xcodeproj -scheme All -arch x86_64 -configuration Release | xcpretty
 

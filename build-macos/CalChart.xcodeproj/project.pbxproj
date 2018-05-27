@@ -2085,14 +2085,6 @@
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"_FILE_OFFSET_BITS=64",
-					__WXMAC__,
-					__WXOSX__,
-					__WXOSX_COCOA__,
-					WX_PRECOMP,
-					"$(inherited)",
-				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					../resources,
@@ -2108,13 +2100,6 @@
 			baseConfigurationReference = E8DC2F4F2078813600EDD40D /* calchart.xcconfig */;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"_FILE_OFFSET_BITS=64",
-					__WXMAC__,
-					__WXOSX__,
-					__WXOSX_COCOA__,
-					WX_PRECOMP,
-				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					../resources,
