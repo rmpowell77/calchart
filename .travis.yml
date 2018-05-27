@@ -1,0 +1,5 @@
+language: cpp
+
+script:
+    - xcodebuild -project build-macos/CalChart.xcodeproj -scheme All -arch x86_64 -configuration Debug
+
