@@ -2253,6 +2253,7 @@
 				HEADER_SEARCH_PATHS = (
 					../resources,
 					/opt/local/include,
+					/usr/local/include,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -2281,6 +2282,7 @@
 				HEADER_SEARCH_PATHS = (
 					../resources,
 					/opt/local/include,
+					/usr/local/include,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
