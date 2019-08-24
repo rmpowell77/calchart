@@ -6,7 +6,7 @@
 # Effective Modern CMake (https://gist.github.com/mbinna/c61dbb39bca0e4fb7d1f73b0d66a4fd1)
 # Creating Mac OS X Packages with CMake (https://blog.kitware.com/creating-mac-os-x-packages-with-cmake/)
 
-cmake_minimum_required (VERSION 3.11)
+cmake_minimum_required (VERSION 3.7)
 
 project (CalChart)
 
