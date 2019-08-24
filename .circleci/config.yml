@@ -15,6 +15,9 @@ jobs:
           name: Install BOOST
           command: 'apt-get update && apt-get install -y libboost-all-dev'
       - run:
+          name: Install bison, flex
+          command: 'apt-get update && apt-get install -y bison flex'
+      - run:
           name: Creating Build Files
           command: 'cmake -H. -Bbuild'
       - run:
