@@ -29,4 +29,27 @@ jobs:
       - run:
           name: Creating Binary Files
           command: 'cmake --build build'
+  build-mac:
+    docker:
+      - image: "debian:stretch"
+    steps:
+      - checkout
+      - run:
+          name: Installing git
+          command: 'apt-get update && apt-get install -y git'
+      - run:
+          name: Installing GCC
+          command: 'apt-get update && apt-get install -y gcc g++'
+      - run:
+          name: Install CMAKE
+          command: 'apt-get update && apt-get install -y cmake'
+      - run:
+          name: Install BOOST
+          command: 'apt-get update && apt-get install -y libboost-all-dev'
 
+workflows:
+  version: 2.1
+  build_all:
+    jobs:
+      - build
+      - build-mac
