@@ -32,7 +32,6 @@ jobs:
   build-mac:
     macos:
       xcode: "10.0.0" 
-      - image: "debian:stretch"
     steps:
       - checkout
       - run:
