@@ -279,3 +279,7 @@ set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}")
 
 include (CPack)
 
+# tests for calchart_core
+include(CTest)
+add_test (TutorialRuns calchart_cmd --version)
+

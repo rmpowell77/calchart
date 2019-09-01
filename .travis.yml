@@ -3,6 +3,16 @@ language: cpp
 compiler:  
     - gcc
 
+
+install:
+    - wget -O boost_1_66_0.tar.gz http://sourceforge.net/projects/boost/files/boost/1.66.0/boost_1_66_0.tar.gz/download
+    - tar xzf boost_1_66_0.tar.gz
+    - cd boost_1_66_0/
+    - ./bootstrap.sh
+    - ./b2 headers
+    - sudo cp -r boost /usr/local/include
+    - cd ..
+
 before_script:  
     - mkdir build
     - cd build
