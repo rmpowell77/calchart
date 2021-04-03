@@ -41,6 +41,20 @@ enum {
     NUMCONTVARS
 };
 
+const std::string s_contvar_names[] = {
+    "A",
+    "B",
+    "C",
+    "D",
+    "X",
+    "Y",
+    "Z",
+    "DOF",
+    "DOH",
+};
+
+static_assert(sizeof(s_contvar_names) / sizeof(s_contvar_names[0]) == NUMCONTVARS, "");
+
 enum AnimateDir {
     ANIMDIR_N,
     ANIMDIR_NE,
@@ -88,17 +102,14 @@ enum MarchingStyle {
     STYLE_Close
 };
 
-enum CollisionWarning {
-    COLLISION_RESPONSE_NONE,
-    COLLISION_RESPONSE_SHOW,
-    COLLISION_RESPONSE_BEEP
-};
-
-using AnimatePoint = Coord;
-
 struct ErrorMarker {
     SelectionList pntgroup; // which points have this error
     SYMBOL_TYPE contsymbol = SYMBOL_PLAIN; // which continuity
     int line = -1, col = -1; // where
+    bool operator==(ErrorMarker const& rhs) const
+    {
+        return pntgroup == rhs.pntgroup && contsymbol == rhs.contsymbol && line == rhs.line && col == rhs.col;
+    }
 };
+
 }

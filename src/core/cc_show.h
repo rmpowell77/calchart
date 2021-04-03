@@ -23,12 +23,14 @@
 
 #include "cc_fileformat.h"
 #include "cc_types.h"
-#include "json.h"
 
 #include "animate.h"
 #include "cc_sheet.h"
+#include "modes.h"
+
 #include <map>
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <set>
 #include <string>
 #include <vector>
@@ -37,6 +39,7 @@ namespace CalChart {
 class Lasso;
 class Show;
 class Sheet;
+struct ParseErrorHandlers;
 
 using Show_command = std::function<void(Show&)>;
 using Show_command_pair = std::pair<Show_command, Show_command>;
@@ -54,15 +57,16 @@ public:
     using const_Sheet_iterator_t = Sheet_container_t::const_iterator;
 
     // you can create a show in two ways, from nothing, or from an input stream
-    static std::unique_ptr<Show> Create_CC_show();
-    static std::unique_ptr<Show> Create_CC_show(std::vector<std::string> const& labels, unsigned columns, Coord const& new_march_position);
-    static std::unique_ptr<Show> Create_CC_show(std::istream& stream);
+    static std::unique_ptr<Show> Create_CC_show(ShowMode const& mode);
+    static std::unique_ptr<Show> Create_CC_show(ShowMode const& mode, std::vector<std::string> const& labels, unsigned columns);
+    static std::unique_ptr<Show> Create_CC_show(ShowMode const& mode, std::istream& stream, ParseErrorHandlers const* correction = nullptr);
 
 private:
-    Show();
-    // using overloading with structs to determine which constructor to use
-    Show(std::istream& stream, Version_3_3_and_earlier);
-    Show(const uint8_t* ptr, size_t size, Current_version_and_later);
+    Show(ShowMode const& mode);
+    // calchart 3.3 and earlier is parsed via the istream.
+    Show(ShowMode const& mode, std::istream& stream, ParseErrorHandlers const* correction = nullptr);
+    // calchart 3.4 and later are given a data blob to parse.
+    Show(ShowMode const& mode, const uint8_t* ptr, size_t size, ParseErrorHandlers const* correction = nullptr);
 
 public:
     ~Show();
@@ -74,6 +78,8 @@ public:
     // Create command, consists of an action and undo action
     Show_command_pair Create_SetCurrentSheetCommand(int n) const;
     Show_command_pair Create_SetSelectionCommand(const SelectionList& sl) const;
+    Show_command_pair Create_SetCurrentSheetAndSelectionCommand(int n, const SelectionList& sl) const;
+    Show_command_pair Create_SetShowModeCommand(CalChart::ShowMode const& newmode) const;
     Show_command_pair Create_SetShowInfoCommand(std::vector<std::string> const& labels, int numColumns, Coord const& new_march_position) const;
     Show_command_pair Create_SetSheetTitleCommand(std::string const& newname) const;
     Show_command_pair Create_SetSheetBeatsCommand(int beats) const;
@@ -85,10 +91,10 @@ public:
     Show_command_pair Create_MovePointsCommand(int whichSheet, std::map<int, Coord> const& new_positions, int ref) const;
     Show_command_pair Create_DeletePointsCommand() const;
     Show_command_pair Create_RotatePointPositionsCommand(int rotateAmount, int ref) const;
-    Show_command_pair Create_SetReferencePointToRef0(int ref) const;
+    Show_command_pair Create_ResetReferencePointToRef0(int ref) const;
     Show_command_pair Create_SetSymbolCommand(SYMBOL_TYPE sym) const;
     Show_command_pair Create_SetSymbolCommand(const SelectionList& whichDots, SYMBOL_TYPE sym) const;
-    Show_command_pair Create_SetContinuityTextCommand(SYMBOL_TYPE which_sym, std::string const& text) const;
+    Show_command_pair Create_SetContinuityCommand(SYMBOL_TYPE which_sym, Continuity const& cont) const;
     Show_command_pair Create_SetLabelFlipCommand(std::map<int, bool> const& new_flip) const;
     Show_command_pair Create_SetLabelRightCommand(bool right) const;
     Show_command_pair Create_ToggleLabelFlipCommand() const;
@@ -114,6 +120,8 @@ public:
 
     bool WillMovePoints(std::map<int, Coord> const& new_positions, int ref) const;
 
+    const ShowMode& GetShowMode() const;
+
     // utility
     std::pair<bool, std::vector<size_t>> GetRelabelMapping(const_Sheet_iterator_t source_sheet, const_Sheet_iterator_t target_sheets, CalChart::Coord::units tolerance) const;
     SelectionList MakeSelectAll() const;
@@ -128,22 +136,13 @@ public:
     auto GetSelectionList() const { return mSelectionList; }
 
     /*!
-     * @brief Generates a JSONElement that could represent this
+     * @brief Generates a JSON that could represent this
      * show in an Online Viewer '.viewer' file.
      * @param compiledShow An up-to-date Animation of the show.
-     * @return A JSONElement which could represent this show in
+     * @return A JSON which could represent this show in
      * a '.viewer' file.
      */
-    JSONElement toOnlineViewerJSON(const Animation& compiledShow) const;
-
-    /*!
-     * @brief Manipulates dest so that it contains a JSONElement that
-     * could represent this show in an Online Viewer '.viewer' file.
-     * @param dest A reference to the JSONElement which will be transformed
-     * into a JSON representation of this show.
-     * @param compiledShow An up-to-date Animation of the show.
-     */
-    void toOnlineViewerJSON(JSONElement& dest, const Animation& compiledShow) const;
+    nlohmann::json toOnlineViewerJSON(const Animation& compiledShow) const;
 
 private:
     // modification of show is private, and externally done through create and exeucte commands
@@ -166,6 +165,8 @@ private:
     auto GetNthSheet(unsigned n) { return GetSheetBegin() + n; }
     auto GetCurrentSheet() { return GetNthSheet(mSheetNum); }
 
+    void SetShowMode(ShowMode const&);
+
     // implementation and helper functions
     std::vector<uint8_t> SerializeShowData() const;
 
@@ -175,11 +176,13 @@ private:
     std::vector<std::string> mPtLabels;
     SelectionList mSelectionList; // order of selections
     int mSheetNum;
+    ShowMode mMode;
 
     // unit tests
     friend void Show_UnitTests();
     static void CC_show_round_trip_test();
     static void CC_show_round_trip_test_with_number_label_description();
+    static void CC_show_round_trip_test_with_different_show_modes();
     static void CC_show_blank_desc_test();
     static void CC_show_future_show_test();
     static void CC_show_wrong_size_throws_exception();

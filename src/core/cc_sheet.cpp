@@ -24,6 +24,7 @@
 
 #include "animatecommand.h"
 #include "cc_fileformat.h"
+#include "cc_parse_errors.h"
 #include "cc_show.h"
 #include "viewer_translate.h"
 
@@ -146,8 +147,7 @@ CheckInconsistancy(SYMBOL_TYPE symbol, uint8_t cont_index,
 }
 
 // Constructor for shows 3.3 and ealier.
-Sheet::Sheet(size_t numPoints, std::istream& stream,
-    Version_3_3_and_earlier)
+Sheet::Sheet(size_t numPoints, std::istream& stream, ParseErrorHandlers const* correction)
     : mAnimationContinuity(MAX_NUM_SYMBOLS)
     , mPoints(numPoints)
 {
@@ -292,15 +292,14 @@ Sheet::Sheet(size_t numPoints, std::istream& stream,
             }
         }
         std::string textstr(text);
-        mAnimationContinuity.at(symbol_index).SetText(textstr);
+        mAnimationContinuity.at(symbol_index) = Continuity{ textstr, correction };
 
         name = ReadLong(stream);
     }
 }
 // -=-=-=-=-=- LEGACY CODE</end> -=-=-=-=-=-
 
-Sheet::Sheet(size_t numPoints, const uint8_t* ptr, size_t size,
-    Current_version_and_later)
+Sheet::Sheet(size_t numPoints, const uint8_t* ptr, size_t size, ParseErrorHandlers const* correction)
     : mAnimationContinuity(MAX_NUM_SYMBOLS)
     , mPoints(numPoints)
 {
@@ -332,7 +331,7 @@ Sheet::Sheet(size_t numPoints, const uint8_t* ptr, size_t size,
             throw CC_FileException("Incorrect size", INGL_PNTS);
         }
     };
-    auto parse_INGL_ECNT = [](Sheet* sheet, const uint8_t* ptr, size_t size) {
+    auto parse_INGL_ECNT = [correction](Sheet* sheet, const uint8_t* ptr, size_t size) {
         if (size < 2) // one byte num + 1 nil minimum
         {
             throw CC_FileException("Bad cont chunk", INGL_ECNT);
@@ -352,13 +351,40 @@ Sheet::Sheet(size_t numPoints, const uint8_t* ptr, size_t size,
             throw CC_FileException("No viable symbol for name", INGL_ECNT);
         }
         std::string textstr(text);
-        sheet->mAnimationContinuity.at(symbol_index).SetText(textstr);
+        sheet->mAnimationContinuity.at(symbol_index) = Continuity{ textstr, correction };
     };
     auto parse_INGL_CONT = [parse_INGL_ECNT](Sheet* sheet, const uint8_t* ptr,
                                size_t size) {
-        static const std::map<uint32_t, std::function<void(Sheet*, const uint8_t*, size_t)>>
+        const std::map<uint32_t, std::function<void(Sheet*, const uint8_t*, size_t)>>
             parser = {
                 { INGL_ECNT, parse_INGL_ECNT },
+            };
+
+        auto table = Parser::ParseOutLabels(ptr, ptr + size);
+        for (auto& i : table) {
+            auto the_parser = parser.find(std::get<0>(i));
+            if (the_parser != parser.end()) {
+                the_parser->second(sheet, std::get<1>(i), std::get<2>(i));
+            }
+        }
+    };
+    auto parse_INGL_EVCT = [](Sheet* sheet, const uint8_t* ptr, size_t size) {
+        auto begin = ptr;
+        auto end = ptr + size;
+        if (std::distance(begin, end) < 1) // one byte for symbol
+        {
+            throw CC_FileException("Bad cont chunk", INGL_EVCT);
+        }
+        SYMBOL_TYPE symbol_index = static_cast<SYMBOL_TYPE>(*begin++);
+        if (symbol_index >= MAX_NUM_SYMBOLS) {
+            throw CC_FileException("No viable symbol for name", INGL_EVCT);
+        }
+        sheet->mAnimationContinuity.at(symbol_index) = Continuity{ std::vector<uint8_t>{ begin, end } };
+    };
+    auto parse_INGL_VCNT = [parse_INGL_EVCT](Sheet* sheet, const uint8_t* ptr, size_t size) {
+        const std::map<uint32_t, std::function<void(Sheet*, const uint8_t*, size_t)>>
+            parser = {
+                { INGL_EVCT, parse_INGL_EVCT },
             };
 
         auto table = Parser::ParseOutLabels(ptr, ptr + size);
@@ -378,19 +404,24 @@ Sheet::Sheet(size_t numPoints, const uint8_t* ptr, size_t size,
         sheet->mPrintableContinuity = Print_continuity(print_name, print_cont);
     };
     auto parse_INGL_BACK = [](Sheet* sheet, const uint8_t* ptr, size_t size) {
+        auto end_ptr = ptr + size;
         auto num = get_big_long(ptr);
         ptr += 4;
         while (num--) {
             sheet->mBackgroundImages.emplace_back(ptr);
         }
+        if (ptr != end_ptr) {
+            throw CC_FileException("Bad Background chunk", INGL_BACK);
+        }
     };
 
-    static const std::map<uint32_t, std::function<void(Sheet*, const uint8_t*, size_t)>>
+    const std::map<uint32_t, std::function<void(Sheet*, const uint8_t*, size_t)>>
         parser = {
             { INGL_NAME, parse_INGL_NAME },
             { INGL_DURA, parse_INGL_DURA },
             { INGL_PNTS, parse_INGL_PNTS },
             { INGL_CONT, parse_INGL_CONT },
+            { INGL_VCNT, parse_INGL_VCNT },
             { INGL_PCNT, parse_INGL_PCNT },
             { INGL_BACK, parse_INGL_BACK },
         };
@@ -422,12 +453,9 @@ std::vector<uint8_t> Sheet::SerializeContinuityData() const
     for (auto& current_symbol : k_symbols) {
         if (ContinuityInUse(current_symbol)) {
             std::vector<uint8_t> continuity;
-            Parser::Append(continuity,
-                static_cast<uint8_t>(current_symbol));
-            Parser::AppendAndNullTerminate(
-                continuity, mAnimationContinuity.at(current_symbol).GetText());
-            Parser::Append(
-                result, Parser::Construct_block(INGL_ECNT, continuity));
+            Parser::Append(continuity, static_cast<uint8_t>(current_symbol));
+            Parser::Append(continuity, mAnimationContinuity.at(current_symbol).Serialize());
+            Parser::Append(result, Parser::Construct_block(INGL_EVCT, continuity));
         }
     }
     return result;
@@ -472,14 +500,14 @@ std::vector<uint8_t> Sheet::SerializeSheetData() const
     Parser::Append(result, Parser::Construct_block(INGL_PNTS, SerializeAllPoints()));
 
     // Write Continuity
-    Parser::Append(result, Parser::Construct_block(INGL_CONT, SerializeContinuityData()));
+    Parser::Append(result, Parser::Construct_block(INGL_VCNT, SerializeContinuityData()));
 
     // Write Continuity
     Parser::Append(result,
         Parser::Construct_block(
             INGL_PCNT, SerializePrintContinuityData()));
 
-    // Write Continuity
+    // Write Background
     Parser::Append(result, Parser::Construct_block(INGL_BACK, SerializeBackgroundImageData()));
 
     return result;
@@ -487,7 +515,7 @@ std::vector<uint8_t> Sheet::SerializeSheetData() const
 
 // SHEET              = INGL_SHET , BigEndianInt32(DataTill_SHEET_END) ,
 // SHEET_DATA , SHEET_END ;
-// SHEET_DATA         = NAME , DURATION , ALL_POINTS , CONTINUITY, [
+// SHEET_DATA         = NAME , DURATION , ALL_POINTS , VCONTINUITY, [
 // PRINT_CONTINUITY ] ;
 // SHEET_END          = INGL_END , INGL_SHET ;
 std::vector<uint8_t> Sheet::SerializeSheet() const
@@ -497,7 +525,7 @@ std::vector<uint8_t> Sheet::SerializeSheet() const
     return result;
 }
 
-Sheet::~Sheet() {}
+Sheet::~Sheet() = default;
 
 // Find point at certain coords
 int Sheet::FindPoint(Coord where, Coord::units searchBound,
@@ -566,9 +594,9 @@ const Continuity& Sheet::GetContinuityBySymbol(SYMBOL_TYPE i) const
     return mAnimationContinuity.at(i);
 }
 
-void Sheet::SetContinuityText(SYMBOL_TYPE which, const std::string& text)
+void Sheet::SetContinuity(SYMBOL_TYPE which, Continuity const& new_cont)
 {
-    mAnimationContinuity.at(which).SetText(text);
+    mAnimationContinuity.at(which) = new_cont;
 }
 
 bool Sheet::ContinuityInUse(SYMBOL_TYPE idx) const
@@ -666,69 +694,48 @@ Point& Sheet::GetPoint(unsigned i) { return mPoints[i]; }
 
 std::vector<Point> Sheet::GetPoints() const { return mPoints; }
 
-JSONElement Sheet::toOnlineViewerJSON(unsigned sheetNum, std::vector<std::string> dotLabels, const AnimateSheet& compiledSheet) const
+nlohmann::json Sheet::toOnlineViewerJSON(unsigned sheetNum, std::vector<std::string> dotLabels, const AnimateSheet& compiledSheet) const
 {
-    JSONElement newViewerObject = JSONElement::makeNull();
-    toOnlineViewerJSON(newViewerObject, sheetNum, dotLabels, compiledSheet);
-    return newViewerObject;
-}
+    nlohmann::json j;
+    // TODO; add printed continuities to viewer file manually for now
+    const auto boilerplate = std::vector<std::string>{
+        std::string("(MANUAL) first continuity instruction goes here for SS") + std::to_string(sheetNum),
+        std::string("(MANUAL) second instruction"),
+        std::string("(MANUAL) third instruction..."),
+    };
 
-void Sheet::toOnlineViewerJSON(JSONElement& dest, unsigned sheetNum, std::vector<std::string> dotLabels, const AnimateSheet& compiledSheet) const
-{
-    JSONDataObjectAccessor sheetObjectAccessor = dest = JSONElement::makeObject();
-
-    // Create a skeleton for the JSON representation of a sheet
-    sheetObjectAccessor["label"] = std::to_string(sheetNum);
-    sheetObjectAccessor["field_type"] = "college";
-    sheetObjectAccessor["dot_types"] = JSONElement::makeArray();
-    sheetObjectAccessor["dot_labels"] = JSONElement::makeObject();
-    sheetObjectAccessor["continuities"] = JSONElement::makeObject();
-    sheetObjectAccessor["beats"] = mBeats;
-    sheetObjectAccessor["movements"] = JSONElement::makeObject();
-
-    JSONDataObjectAccessor dotTypeAssignmentsAccessor = sheetObjectAccessor["dot_labels"];
-
-    // Iterate through all dots and collect the unique dot types discovered while doing so
-    // As we discover the dot type of each dot, record the dot type assigment inside of 'dot_labels'
     std::set<std::string> uniqueDotTypes;
+    std::map<std::string, std::string> labelToSymbol;
+    std::map<std::string, std::vector<std::string>> continuities;
+
     for (unsigned i = 0; i < mPoints.size(); i++) {
-        std::string symbolName = ToOnlineViewer::symbolName(mPoints[i].GetSymbol());
+        auto symbolName = ToOnlineViewer::symbolName(mPoints[i].GetSymbol());
         uniqueDotTypes.insert(symbolName);
-        dotTypeAssignmentsAccessor[dotLabels[i]] = symbolName;
+        labelToSymbol[dotLabels[i]] = symbolName;
+        continuities[symbolName] = boilerplate;
     }
 
-    JSONDataArrayAccessor dotTypesAccessor = sheetObjectAccessor["dot_types"];
-    JSONDataObjectAccessor continuitiesAccessor = sheetObjectAccessor["continuities"];
-
-    // In 'dot_types', list all unique dot types that are used in this sheet
-    // In 'continuities', map a dot type to its printed continuity
-    for (auto iter = uniqueDotTypes.begin(); iter != uniqueDotTypes.end(); iter++) {
-        dotTypesAccessor->pushBack(JSONElement::makeString(*iter));
-
-        continuitiesAccessor[*iter] = JSONElement::makeArray();
-        JSONDataArrayAccessor contArrayAccessor = continuitiesAccessor[*iter];
-
-        contArrayAccessor->pushBack("(MANUAL) first continuity instruction goes here for SS" + std::to_string(sheetNum)); // TODO; add printed continuities to viewer file manually for now
-        contArrayAccessor->pushBack("(MANUAL) second instruction");
-        contArrayAccessor->pushBack("(MANUAL) third instruction...");
-    }
-
-    JSONDataObjectAccessor movementsAccessor = sheetObjectAccessor["movements"];
+    j["dot_labels"] = labelToSymbol;
+    j["dot_types"] = uniqueDotTypes;
+    j["label"] = std::to_string(sheetNum);
+    j["beats"] = static_cast<double>(mBeats);
+    j["field_type"] = "college";
+    j["continuities"] = continuities;
 
     // In 'movements', make a series of commands to describe how a point should be animated over time in the Online Viewer
+    std::map<std::string, std::vector<nlohmann::json>> movements;
     for (unsigned ptIndex = 0; ptIndex < mPoints.size(); ptIndex++) {
-        JSONDataArrayAccessor pointMovementsAccessor = movementsAccessor[dotLabels[ptIndex]] = JSONElement::makeArray();
-
-        AnimatePoint currPos(mPoints[ptIndex].GetPos().x, mPoints[ptIndex].GetPos().y);
+        auto currPos = Coord(mPoints[ptIndex].GetPos().x, mPoints[ptIndex].GetPos().y);
 
         for (auto commandIter = compiledSheet.GetCommandsBegin(ptIndex); commandIter != compiledSheet.GetCommandsEnd(ptIndex); commandIter++) {
 
-            pointMovementsAccessor->pushBack(JSONElement::makeNull());
-            (*commandIter)->toOnlineViewerJSON(pointMovementsAccessor->back(), currPos);
+            movements[dotLabels[ptIndex]].push_back((*commandIter)->toOnlineViewerJSON(currPos));
 
             (*commandIter)->ApplyForward(currPos);
         }
     }
+    j["movements"] = movements;
+    return j;
 }
 
 void Sheet::SetPoints(const std::vector<Point>& points) { mPoints = points; }
@@ -748,10 +755,10 @@ void Sheet::sheet_round_trip_test()
         assert(table.size() == 1);
         assert(std::get<0>(table.front()) == INGL_SHET);
         auto re_read_sheet = Sheet(0, std::get<1>(table.front()),
-            std::get<2>(table.front()),
-            Current_version_and_later());
+            std::get<2>(table.front()));
         auto re_read_sheet_data = re_read_sheet.SerializeSheet();
         bool is_equal = blank_sheet_data.size() == re_read_sheet_data.size() && std::equal(blank_sheet_data.begin(), blank_sheet_data.end(), re_read_sheet_data.begin());
+        (void)is_equal;
         assert(is_equal);
     }
     {
@@ -763,10 +770,10 @@ void Sheet::sheet_round_trip_test()
         assert(table.size() == 1);
         assert(std::get<0>(table.front()) == INGL_SHET);
         auto re_read_sheet = Sheet(0, std::get<1>(table.front()),
-            std::get<2>(table.front()),
-            Current_version_and_later());
+            std::get<2>(table.front()));
         auto re_read_sheet_data = re_read_sheet.SerializeSheet();
         bool is_equal = blank_sheet_data.size() == re_read_sheet_data.size() && std::equal(blank_sheet_data.begin(), blank_sheet_data.end(), re_read_sheet_data.begin());
+        (void)is_equal;
         assert(is_equal);
     }
     {
@@ -777,7 +784,7 @@ void Sheet::sheet_round_trip_test()
         blank_sheet.SetPosition(Coord(30, 40), 0, 2);
         blank_sheet.SetPosition(Coord(52, 50), 0, 3);
         blank_sheet.SetBeats(13);
-        blank_sheet.mAnimationContinuity.at(SYMBOL_PLAIN).SetText("continuity test");
+        blank_sheet.mAnimationContinuity.at(SYMBOL_PLAIN) = Continuity{ "MT E REM" };
         blank_sheet.mPrintableContinuity = Print_continuity{
             "number 1", "duuuude, writing this testing is boring"
         };
@@ -788,8 +795,7 @@ void Sheet::sheet_round_trip_test()
         assert(table.size() == 1);
         assert(std::get<0>(table.front()) == INGL_SHET);
         auto re_read_sheet = Sheet(1, std::get<1>(table.front()),
-            std::get<2>(table.front()),
-            Current_version_and_later());
+            std::get<2>(table.front()));
         auto re_read_sheet_data = re_read_sheet.SerializeSheet();
         bool is_equal = blank_sheet_data.size() == re_read_sheet_data.size() && std::equal(blank_sheet_data.begin(), blank_sheet_data.end(), re_read_sheet_data.begin());
         //		auto mismatch_at = std::mismatch(blank_sheet_data.begin(),
@@ -797,6 +803,7 @@ void Sheet::sheet_round_trip_test()
         //		std::cout<<"mismatch at
         //"<<std::distance(blank_sheet_data.begin(),
         // mismatch_at.first)<<"\n";
+        (void)is_equal;
         assert(is_equal);
     }
 }

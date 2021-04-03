@@ -44,13 +44,20 @@ public:
     auto GetErrors() const { return mErrorMarkers; }
     void RegisterError(AnimateError err, const ContToken* token, unsigned curr_pt,
         SYMBOL_TYPE contsymbol);
+    void RegisterError(AnimateError err, int line, int col, unsigned curr_pt,
+        SYMBOL_TYPE contsymbol);
+
+    bool operator==(AnimationErrors const& rhs) const
+    {
+        return mErrorMarkers == rhs.mErrorMarkers;
+    }
 
 private:
     std::map<AnimateError, ErrorMarker> mErrorMarkers;
 };
 
 struct AnimateState {
-    AnimatePoint pt;
+    Coord pt;
     unsigned beats_rem;
     AnimationVariables& mVars;
     AnimationErrors& error_markers;
@@ -64,7 +71,7 @@ public:
     Compile(const Show& show, AnimationVariables& variablesStates,
         AnimationErrors& errors, Show::const_Sheet_iterator_t c_sheet,
         unsigned pt_num, SYMBOL_TYPE cont_symbol,
-        std::list<std::unique_ptr<ContProcedure>> const& proc);
+        std::vector<std::unique_ptr<ContProcedure>> const& proc);
 
 private:
     AnimateCompile(const Show& show, SYMBOL_TYPE cont_symbol, unsigned pt_num, Show::const_Sheet_iterator_t c_sheet, AnimateState& state);
@@ -80,9 +87,9 @@ public:
     auto GetPointPosition() const { return mState.pt; }
     auto GetCurrentPoint() const { return curr_pt; }
     auto GetBeatsRemaining() const { return mState.beats_rem; }
-    AnimatePoint GetStartingPosition() const;
-    AnimatePoint GetEndingPosition(const ContToken* token) const;
-    AnimatePoint GetReferencePointPosition(unsigned refnum) const;
+    Coord GetStartingPosition() const;
+    Coord GetEndingPosition(const ContToken* token) const;
+    Coord GetReferencePointPosition(unsigned refnum) const;
 
 private:
     const Show& mShow;

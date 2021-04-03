@@ -21,19 +21,108 @@
 */
 
 #include "cc_continuity.h"
+#include "cc_fileformat.h"
+#include "cc_parse_errors.h"
+#include "cont.h"
+#include "parse.h"
 #include <assert.h>
+#include <sstream>
+
+extern int parsecontinuity();
+extern const char* yyinputbuffer;
+extern std::vector<std::unique_ptr<CalChart::ContProcedure>> ParsedContinuity;
 
 namespace CalChart {
 
-Continuity::Continuity() {}
+std::vector<std::unique_ptr<ContProcedure>>
+Continuity::ParseContinuity(std::string const& s, ParseErrorHandlers const* correct)
+{
+    std::string thisParse = s;
+    while (1) {
+        yyinputbuffer = thisParse.c_str();
+        // parse out the error
+        if (parsecontinuity() == 0) {
+            return std::move(ParsedContinuity);
+        }
+        if (correct && correct->mContinuityParseCorrectionHandler) {
+            // give the user a chance to correct.
+            thisParse = correct->mContinuityParseCorrectionHandler(std::string("Could not parse line ") + std::to_string(yylloc.first_line) + " at " + std::to_string(yylloc.first_column), thisParse, yylloc.first_line, yylloc.first_column);
+        } else {
+            ContToken dummy;
+            throw ParseError(s, dummy.line, dummy.col);
+        }
+    }
+}
 
-Continuity::~Continuity() {}
+std::vector<std::unique_ptr<ContProcedure>>
+Continuity::Deserialize(std::vector<uint8_t> const& data)
+{
+    auto result = std::vector<std::unique_ptr<ContProcedure>>{};
 
-void Continuity::SetText(const std::string& s) { text = s; }
+    auto begin = data.data();
+    auto end = data.data() + data.size();
+    while (std::distance(begin, end) > 0) {
+        auto next_result = std::unique_ptr<ContProcedure>{};
+        std::tie(next_result, begin) = DeserializeContProcedure(begin, end);
+        result.push_back(std::move(next_result));
+    }
+    if (begin != end) {
+        throw std::runtime_error("Error, did not parse all the data correctly");
+    }
+    return result;
+}
 
-void Continuity::AppendText(const std::string& s) { text.append(s); }
+Continuity::Continuity(std::string const& s, ParseErrorHandlers const* correction)
+    : m_parsedContinuity(ParseContinuity(s, correction))
+    , m_legacyText(s)
+{
+}
 
-const std::string& Continuity::GetText() const { return text; }
+Continuity::~Continuity() = default;
+
+Continuity::Continuity(Continuity const& other)
+{
+    for (auto&& i : other.m_parsedContinuity) {
+        m_parsedContinuity.emplace_back(i->clone());
+    }
+}
+
+Continuity::Continuity(std::vector<std::unique_ptr<ContProcedure>> from_cont)
+    : m_parsedContinuity(std::move(from_cont))
+{
+}
+
+Continuity::Continuity(std::vector<uint8_t> const& data)
+    : m_parsedContinuity(Continuity::Deserialize(data))
+{
+}
+
+Continuity& Continuity::operator=(Continuity const& other)
+{
+    Continuity copy(other);
+    swap(*this, copy);
+    return *this;
+}
+
+Continuity::Continuity(Continuity&&) noexcept = default;
+Continuity& Continuity::operator=(Continuity&&) noexcept = default;
+
+bool operator==(Continuity const& lhs, Continuity const& rhs)
+{
+    return std::equal(lhs.m_parsedContinuity.begin(), lhs.m_parsedContinuity.end(), rhs.m_parsedContinuity.begin(), rhs.m_parsedContinuity.end(), [](auto&& a, auto&& b) {
+        return *a == *b;
+    });
+}
+
+std::vector<uint8_t>
+Continuity::Serialize() const
+{
+    std::vector<uint8_t> result;
+    for (auto&& i : m_parsedContinuity) {
+        Parser::Append(result, i->Serialize());
+    }
+    return result;
+}
 
 // Test Suite stuff
 struct Continuity_values {
@@ -41,10 +130,47 @@ struct Continuity_values {
     std::string GetText;
 };
 
-bool Check_Continuity(const Continuity& underTest,
-    const Continuity_values& values)
+bool Check_Continuity(Continuity const&, Continuity_values const&)
 {
-    return (underTest.text == values.text) && (underTest.GetText() == values.GetText);
+    return true;
+}
+
+void Continuity_serialize_test()
+{
+    // Set some text
+    for (auto i : {
+             "mt E REM",
+             "BLAM",
+             "close 1 0",
+             "Countermarch R1 R2 1 N E 16",
+             "DMCM SP NP 6 / 3",
+             "DMHS NP",
+             "EVEN 10 + 3 NP",
+             "EWNS NP",
+             "FM 10 - 3 N",
+             "FMTO R3",
+             "FOUNTAIN DIR(NP) DIRFROM(SP NP) DIST(NP) 3 NP",
+             "FOUNTAIN DIR(NP) DIRFROM(SP NP) NP",
+             "GRID DISTFROM(R1 R2)",
+             "HSCM NP R1 EITHER(N S R1)",
+             "HSDM NP",
+             "MAGIC NP",
+             "MARCH GV STEP(2 2 R1) OPP(S)",
+             "MARCH GV STEP(2 2 R1) OPP(S) S",
+             "MT 1 1",
+             "MTRM 10.5",
+             "NSEW SP",
+             "ROTATE 90 SH R2",
+             "ROTATE -90 SH R2",
+             "A = 10 * 9",
+             "  ",
+
+         }) {
+        auto uut1 = Continuity{ i };
+        auto serialize_result = uut1.Serialize();
+        auto uut2 = Continuity{ serialize_result };
+        assert(uut1 == uut2);
+    }
 }
 
 void Continuity_UnitTests()
@@ -64,27 +190,27 @@ void Continuity_UnitTests()
     assert(Check_Continuity(underTest2, values));
 
     // Set some text
-    underTest2.SetText("this is some text");
-    values.text = "this is some text";
+    values.text = "mt E REM";
     values.GetText = values.text;
     assert(Check_Continuity(underTest2, values));
 
-    // Append some more text
-    underTest2.AppendText("Adding more");
-    values.text = "this is some textAdding more";
+    underTest2 = Continuity{ "mt E REM" };
+    values.text = "mt E REM";
     values.GetText = values.text;
     assert(Check_Continuity(underTest2, values));
 
     // Set some text
-    underTest2.SetText("different words");
-    values.text = "different words";
+    underTest2 = Continuity{ "ewns np" };
+    values.text = "ewns np";
     values.GetText = values.text;
     assert(Check_Continuity(underTest2, values));
 
     // Reset text
-    underTest2.SetText("");
+    underTest2 = Continuity{ "" };
     values.text = "";
     values.GetText = values.text;
     assert(Check_Continuity(underTest2, values));
+
+    Continuity_serialize_test();
 }
 }

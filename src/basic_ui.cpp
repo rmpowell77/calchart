@@ -22,10 +22,14 @@
 
 #include "basic_ui.h"
 #include "confgr.h"
+#include "platconf.h"
 
 #include <wx/dnd.h>
+#include <wx/filename.h>
 #include <wx/icon.h>
+#include <wx/stdpaths.h>
 
+#include "calchart.xbm"
 #include "calchart.xpm"
 
 // Set icon to band's insignia
@@ -33,6 +37,43 @@ void SetBandIcon(wxFrame* frame)
 {
     wxIcon icon = wxICON(calchart);
     frame->SetIcon(icon);
+}
+
+wxStaticBitmap* BitmapWithBandIcon(wxWindow* parent, wxSize const& size)
+{
+    wxBitmap bitmap(BITMAP_NAME(calchart));
+    wxImage image;
+#if defined(__APPLE__) && (__APPLE__)
+    const static wxString kImageDir = wxT("CalChart.app/Contents/Resources/calchart.png");
+#else
+    const static wxString kImageDir = wxFileName(wxStandardPaths::Get().GetExecutablePath()).GetPath().Append(PATH_SEPARATOR wxT("resources") PATH_SEPARATOR wxT("calchart.png"));
+#endif
+    if (image.LoadFile(kImageDir)) {
+        if (size != wxDefaultSize) {
+            image = image.Scale(size.GetX(), size.GetY(), wxIMAGE_QUALITY_HIGH);
+        }
+        bitmap = wxBitmap{ image };
+    }
+    return new wxStaticBitmap(parent, wxID_STATIC, bitmap, wxDefaultPosition, size);
+}
+
+wxStaticText* TextStringWithSize(wxWindow* parent, std::string const& label, int pointSize)
+{
+    auto result = new wxStaticText(parent, wxID_STATIC, label, wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE_HORIZONTAL);
+    result->SetFont(CreateFont(pointSize));
+    return result;
+}
+
+wxHyperlinkCtrl* LinkStringWithSize(wxWindow* parent, std::string const& label, std::string const& url, int pointSize)
+{
+    auto result = new wxHyperlinkCtrl(parent, wxID_STATIC, label, url);
+    result->SetFont(CreateFont(pointSize));
+    return result;
+}
+
+wxStaticLine* LineWithLength(wxWindow* parent, int length, long style)
+{
+    return new wxStaticLine(parent, wxID_STATIC, wxDefaultPosition, wxSize(length, -1), style);
 }
 
 class FancyTextWinDropTarget : public wxFileDropTarget {
@@ -63,9 +104,9 @@ FancyTextWin::FancyTextWin(wxWindow* parent, wxWindowID id,
     SetDropTarget(new FancyTextWinDropTarget(this));
 }
 
-#ifdef TEXT_DOS_STYLE
 wxString FancyTextWin::GetValue(void) const
 {
+#ifdef TEXT_DOS_STYLE
     wxString result;
     unsigned i;
 
@@ -79,10 +120,16 @@ wxString FancyTextWin::GetValue(void) const
     }
 
     return result;
-}
+#else
+    return super::GetValue();
 #endif
+}
 
-ScrollZoomCanvas::ScrollZoomCanvas(wxWindow* parent, wxWindowID id,
+BEGIN_EVENT_TABLE(ScrollZoomWindow, ScrollZoomWindow::super)
+EVT_SIZE(ScrollZoomWindow::HandleSizeEvent)
+END_EVENT_TABLE()
+
+ScrollZoomWindow::ScrollZoomWindow(wxWindow* parent, wxWindowID id,
     const wxPoint& pos, const wxSize& size,
     long style)
     : wxScrolledWindow(parent, id, pos, size, wxHSCROLL | wxVSCROLL | style)
@@ -92,36 +139,49 @@ ScrollZoomCanvas::ScrollZoomCanvas(wxWindow* parent, wxWindowID id,
 {
 }
 
-ScrollZoomCanvas::~ScrollZoomCanvas() {}
+ScrollZoomWindow::~ScrollZoomWindow() {}
 
-void ScrollZoomCanvas::PrepareDC(wxDC& dc)
+void ScrollZoomWindow::PrepareDC(wxDC& dc)
 {
     super::PrepareDC(dc);
-    dc.SetUserScale(mZoomFactor, mZoomFactor);
+    auto screenRatio = static_cast<float>(GetSize().x) / static_cast<float>(mCanvasSize.x);
+    dc.SetUserScale(mZoomFactor * screenRatio, mZoomFactor * screenRatio);
 }
 
-void ScrollZoomCanvas::SetCanvasSize(wxSize s)
+void ScrollZoomWindow::SetCanvasSize(wxSize s)
 {
     mCanvasSize = s;
+    SetupSize();
 }
 
-void ScrollZoomCanvas::SetZoom(float z)
+void ScrollZoomWindow::SetZoom(float z)
 {
     mZoomFactor = z;
-    auto newSize = mCanvasSize * mZoomFactor;
-    SetVirtualSize(newSize);
+    SetupSize();
 }
 
-float ScrollZoomCanvas::GetZoom() const
+float ScrollZoomWindow::GetZoom() const
 {
     return mZoomFactor;
 }
 
-void ScrollZoomCanvas::ChangeOffset(wxPoint deltaOffset)
+void ScrollZoomWindow::ChangeOffset(wxPoint deltaOffset)
 {
     auto offset = GetViewStart();
     offset += deltaOffset;
     Scroll(offset);
+}
+
+void ScrollZoomWindow::HandleSizeEvent(wxSizeEvent& event)
+{
+    SetupSize();
+}
+
+void ScrollZoomWindow::SetupSize()
+{
+    auto virtualSizeX = GetSize().x * mZoomFactor;
+    auto virtualSizeY = (virtualSizeX * mCanvasSize.y) / mCanvasSize.x;
+    SetVirtualSize(wxSize(virtualSizeX, virtualSizeY));
 }
 
 MouseMoveScrollCanvas::MouseMoveScrollCanvas(wxWindow* parent, wxWindowID id,
@@ -193,4 +253,41 @@ bool ClickDragCtrlScrollCanvas::ShouldScrollOnMouseEvent(
     const wxMouseEvent& event) const
 {
     return event.Dragging() && event.ControlDown();
+}
+
+wxSizerFlags BasicSizerFlags()
+{
+    static const auto sizerFlags = wxSizerFlags{}.Border(wxALL, 2).Center().Proportion(0);
+    return sizerFlags;
+}
+
+wxSizerFlags LeftBasicSizerFlags()
+{
+    static const auto sizerFlags = wxSizerFlags{}.Border(wxALL, 2).Left().Proportion(0);
+    return sizerFlags;
+}
+
+wxSizerFlags RightBasicSizerFlags()
+{
+    static const auto sizerFlags = wxSizerFlags{}.Border(wxALL, 2).Right().Proportion(0);
+    return sizerFlags;
+}
+
+wxSizerFlags ExpandSizerFlags()
+{
+    static const auto sizerFlags = wxSizerFlags{}.Border(wxALL, 2).Proportion(1).Expand();
+    return sizerFlags;
+}
+
+wxFont CreateFont(int pixelSize, wxFontFamily family, wxFontStyle style, wxFontWeight weight)
+{
+    auto size = wxSize{ 0, fDIP(pixelSize) };
+    return wxFont(size, family, style, weight);
+}
+
+wxFont ResizeFont(wxFont const& font, int pixelSize)
+{
+    auto newFont = font;
+    newFont.SetPixelSize(wxSize{ 0, fDIP(pixelSize) });
+    return newFont;
 }

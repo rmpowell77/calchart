@@ -28,7 +28,11 @@
 #include "parse.h"
 #include "animate.h"
 
-#include <list>
+#include <vector>
+
+#if __cplusplus > 199711L
+#define register      // Deprecated in C++11.
+#endif  // #if __cplusplus > 199711L
 
 //#define YYDEBUG 1
 
@@ -36,7 +40,7 @@ int yyerror(const char *s);
 extern int yylex();
 extern void initscanner();
 
-std::list<std::unique_ptr<CalChart::ContProcedure>> ParsedContinuity;
+std::vector<std::unique_ptr<CalChart::ContProcedure>> ParsedContinuity;
 
 %}
 

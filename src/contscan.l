@@ -25,6 +25,10 @@
 #include "parse.h"
 #include "contgram.hpp"
 
+#if __cplusplus > 199711L
+#define register      // Deprecated in C++11.
+#endif  // #if __cplusplus > 199711L
+
 /* Globals to communicate with parser */
 extern YYSTYPE yylval;	/* lexical value of current token */
 YYLTYPE yylloc;		/* line and column of token */
@@ -70,6 +74,7 @@ void initscanner() {
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-register"
+#pragma clang diagnostic ignored "-Wunused-function"
 #endif // __clang__
 %}
 

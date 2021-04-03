@@ -21,8 +21,8 @@
 */
 
 #include "setup_wizards.h"
+#include "CalChartApp.h"
 #include "basic_ui.h"
-#include "calchartapp.h"
 #include "confgr.h"
 #include "modes.h"
 
@@ -53,9 +53,6 @@ ChooseShowModeWizard::ChooseShowModeWizard(wxWizard* parent)
     for (auto mode : kShowModeStrings) {
         modeStrings.Add(mode);
     }
-    for (auto mode : kSpringShowModeStrings) {
-        modeStrings.Add(mode);
-    }
 
     wxBoxSizer* topsizer = new wxBoxSizer(wxVERTICAL);
     SetSizer(topsizer);
@@ -64,6 +61,7 @@ ChooseShowModeWizard::ChooseShowModeWizard(wxWizard* parent)
         wxDefaultPosition, wxDefaultSize, 0);
     topsizer->Add(label, 0, wxALL, 5);
     mChoice = new wxChoice(this, wxID_ANY, wxPoint(5, 5), wxDefaultSize, modeStrings);
+    mChoice->SetSelection(0);
     topsizer->Add(mChoice, 0, wxALL, 5);
     topsizer->Fit(this);
 }

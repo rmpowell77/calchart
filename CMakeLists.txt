@@ -11,14 +11,14 @@ cmake_minimum_required (VERSION 3.11)
 project (CalChart)
 
 set (CalChart_VERSION_MAJOR 3)
-set (CalChart_VERSION_MINOR 5)
-set (CalChart_VERSION_PATCH 4)
+set (CalChart_VERSION_MINOR 6)
+set (CalChart_VERSION_PATCH 0)
 
 set (CalChart_VERSION "${CalChart_VERSION_MAJOR}.${CalChart_VERSION_MINOR}.${CalChart_VERSION_PATCH}")
 
 configure_file (
-  "${CMAKE_CURRENT_SOURCE_DIR}/ccvers.h.in"
-  "${PROJECT_BINARY_DIR}/version/ccvers.h"
+  ${CMAKE_CURRENT_SOURCE_DIR}/ccvers.h.in
+  ${PROJECT_BINARY_DIR}/version/ccvers.h
   )
 
 
@@ -33,85 +33,128 @@ find_package (Boost 1.60 REQUIRED)
 find_package (BISON REQUIRED)
 find_package (FLEX REQUIRED)
 
-# calchart_core
-set (target calchart_core)
+add_subdirectory (submodules/munkres-cpp EXCLUDE_FROM_ALL)
 
+set(JSON_BuildTests OFF CACHE INTERNAL "")
+add_subdirectory (submodules/nlohmann_json EXCLUDE_FROM_ALL)
+
+# calchart_core
 BISON_TARGET (
-  ${target}_parser
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/contgram.y"
-  "${CMAKE_CURRENT_BINARY_DIR}/contgram.cpp"
+  calchart_core_parser
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/contgram.y
+  ${CMAKE_CURRENT_BINARY_DIR}/contgram.cpp
   )
 
 FLEX_TARGET (
-  ${target}_lexer
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/contscan.l"
-  "${CMAKE_CURRENT_BINARY_DIR}/contscan.cpp"
+  calchart_core_lexer
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/contscan.l
+  ${CMAKE_CURRENT_BINARY_DIR}/contscan.cpp
   COMPILE_FLAGS -i
   )
 
-file (
-  GLOB ${target}Sources "${CMAKE_CURRENT_SOURCE_DIR}/src/core/*.cpp"
-  )
-
-file (
-  GLOB ${target}Headers "${CMAKE_CURRENT_SOURCE_DIR}/src/core/*.h" "${PROJECT_BINARY_DIR}/version/*.h"
-  )
-
 add_library (
-  ${target}
+  calchart_core
   STATIC
-  ${${target}Sources}
-  ${${target}Headers}
-  ${BISON_${target}_parser_OUTPUTS}
-  ${FLEX_${target}_lexer_OUTPUTS}
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/animate.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/animate.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/animate_types.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/animatecommand.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/animatecommand.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/animatecompile.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/animatecompile.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/cc_continuity.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/cc_continuity.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/cc_coord.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/cc_coord.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/cc_drawcommand.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/cc_fileformat.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/cc_image.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/cc_image.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/cc_parse_errors.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/cc_point.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/cc_point.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/cc_shapes.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/cc_shapes.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/cc_sheet.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/cc_sheet.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/cc_show.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/cc_show.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/cc_text.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/cc_text.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/cc_types.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/cont.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/cont.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/e7_transition_solver.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/e7_transition_solver.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/math_utils.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/math_utils.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/modes.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/modes.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/parse.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/print_ps.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/print_ps.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/prolog0.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/prolog1.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/prolog2.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/setup0.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/setup1.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/setup2.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/viewer_translate.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/viewer_translate.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/zllrbach.h
+  ${PROJECT_BINARY_DIR}/version/ccvers.h
+  ${BISON_calchart_core_parser_OUTPUTS}
+  ${FLEX_calchart_core_lexer_OUTPUTS}
   )
 
-target_compile_definitions (${target} PUBLIC YY_NO_UNISTD_H)
+target_compile_definitions (calchart_core PUBLIC YY_NO_UNISTD_H)
+if (MSVC)
+target_compile_options (calchart_core PRIVATE -Wall)
+else ()
+target_compile_options (calchart_core PRIVATE -Werror -Wall -Wextra)
+endif ()
 
-set_target_properties (${target} PROPERTIES CXX_STANDARD 14)
+set_target_properties (calchart_core PROPERTIES CXX_STANDARD 17)
 
 target_include_directories (
-  ${target}
+  calchart_core
   PRIVATE
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/core"
-  "${CMAKE_CURRENT_SOURCE_DIR}/src"
-  "${CMAKE_CURRENT_SOURCE_DIR}/resources"
-  "${CMAKE_CURRENT_SOURCE_DIR}/submodules/munkres-cpp/src"
-  "${Boost_INCLUDE_DIRS}"
-  "${PROJECT_BINARY_DIR}/version"
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core
+  ${Boost_INCLUDE_DIRS}
+  ${PROJECT_BINARY_DIR}/version
+  ${CMAKE_CURRENT_SOURCE_DIR}/submodules/munkres-cpp/src
   )
+
+target_link_libraries(calchart_core PRIVATE nlohmann_json::nlohmann_json)
 
 # calchart_cmd, Mac only
 if (APPLE)
-set (target calchart_cmd)
 add_executable (
-  ${target}
+  calchart_cmd
   "${CMAKE_CURRENT_SOURCE_DIR}/calchart_cmd/main.cpp"
   )
 
 add_subdirectory (submodules/docopt.cpp EXCLUDE_FROM_ALL)
 
 target_link_libraries (
-  ${target}
+  calchart_cmd
   calchart_core
   docopt
   )
 
 install (
-  TARGETS ${target}
+  TARGETS calchart_cmd
   DESTINATION bin
   COMPONENT tools
   )
 
-set_target_properties (${target} PROPERTIES CXX_STANDARD 14)
+set_target_properties (calchart_cmd PROPERTIES CXX_STANDARD 17)
 
 target_include_directories (
-  ${target}
+  calchart_cmd
   PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core"
   "${CMAKE_CURRENT_SOURCE_DIR}/src"
-  "${CMAKE_CURRENT_SOURCE_DIR}/resources"
-  "${CMAKE_CURRENT_SOURCE_DIR}/submodules/munkres-cpp/src"
   "${Boost_INCLUDE_DIRS}"
   "${PROJECT_BINARY_DIR}/version"
   )
@@ -119,79 +162,178 @@ target_include_directories (
 endif()
 
 # CalChart
-set (target CalChart)
-
 file (
-  GLOB ${target}Sources "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+  GLOB CalChartSources "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
   )
 
 file (
-  GLOB ${target}Headers "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
+  GLOB CalChartHeaders "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
   )
 
 file (
-  GLOB ${target}Docs
+  GLOB CalChartDocs
     "${CMAKE_CURRENT_SOURCE_DIR}/docs/*"
   )
 
 file (
-  GLOB ${target}Resources
-    "${CMAKE_CURRENT_SOURCE_DIR}/resources/*.xbm"
-    "${CMAKE_CURRENT_SOURCE_DIR}/resources/*.icns"
-  )
-
-file (
-  GLOB ${target}Images
-    "${CMAKE_CURRENT_SOURCE_DIR}/resources/image/*"
+  GLOB CalChartResources
+    "${CMAKE_CURRENT_SOURCE_DIR}/resources/*"
   )
 
 source_group(
   "Resources" FILES
-  ${${target}Docs}
-  ${${target}Resources}
-  ${${target}Images}
+  ${CalChartDocs}
+  ${CalChartResources}
   )
 
 add_executable (
-  ${target}
-  ${${target}Sources}
-  ${${target}Headers}
-  ${${target}Docs}
-  ${${target}Resources}
-  ${${target}Images}
+  CalChart
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/AnimationCanvas.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/AnimationCanvas.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/AnimationErrorsPanel.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/AnimationErrorsPanel.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/AnimationPanel.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/AnimationPanel.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/AnimationView.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/AnimationView.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/CCOmniviewCanvas.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/CCOmniviewCanvas.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/CalChartApp.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/CalChartApp.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/CalChartDoc.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/CalChartDoc.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/CalChartDocCommand.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/CalChartDocCommand.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/CalChartFrame.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/CalChartFrame.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/CalChartPreferences.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/CalChartPreferences.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/CalChartSizes.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/CalChartSizes.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/CalChartToolBar.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/CalChartToolBar.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/CalChartView.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/CalChartView.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/ColorPalette.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/ColorPalette.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/ColorSetupCanvas.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/ColorSetupCanvas.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/ColorSetupDialog.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/ColorSetupDialog.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/ContinuityBrowser.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/ContinuityBrowser.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/ContinuityBrowserPanel.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/ContinuityBrowserPanel.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/ContinuityComposerDialog.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/ContinuityComposerDialog.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/ContinuityEditorPopup.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/ContinuityEditorPopup.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/CustomListViewPanel.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/CustomListViewPanel.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/FieldCanvas.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/FieldCanvas.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/FieldControlsToolBar.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/FieldControlsToolBar.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/FieldThumbnailBrowser.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/FieldThumbnailBrowser.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/PreferencesContCellSetup.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/PreferencesContCellSetup.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/PreferencesDrawingSetup.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/PreferencesDrawingSetup.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/PreferencesGeneralSetup.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/PreferencesGeneralSetup.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/PreferencesPSPrintingSetup.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/PreferencesPSPrintingSetup.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/PreferencesShowModeSetup.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/PreferencesShowModeSetup.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/PreferencesUtils.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/PreferencesUtils.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/PrintContinuityEditor.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/PrintContinuityEditor.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/TopFrame.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/TopFrame.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/background_image.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/background_image.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/basic_ui.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/basic_ui.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/cc_omniview_constants.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/confgr.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/confgr.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/cont_box_draw.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/cont_box_draw.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/draw.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/draw.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/draw_utils.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/e7_transition_solver_ui.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/e7_transition_solver_ui.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/field_canvas_shapes.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/field_canvas_shapes.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/ghost_module.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/ghost_module.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/linmath.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/mode_dialog.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/mode_dialog.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/mode_dialog_canvas.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/mode_dialog_canvas.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/platconf.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/precomp.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/precomp.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/print_ps_dialog.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/print_ps_dialog.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/setup_wizards.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/setup_wizards.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/show_ui.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/show_ui.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/single_instance_ipc.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/single_instance_ipc.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/ui_enums.h
+  ${CalChartDocs}
+  ${CalChartResources}
   "${CMAKE_CURRENT_SOURCE_DIR}/calchart.rc"
   )
 
 install (
-  TARGETS ${target}
+  TARGETS CalChart
   DESTINATION .
   COMPONENT applications
   )
 
 
-set(AllResources ${${target}Docs} ${${target}Resources} ${${target}Images}) 
+set(AllResources ${CalChartDocs} ${CalChartResources}) 
 
 set_target_properties (
-  ${target} PROPERTIES
+  CalChart PROPERTIES
   RESOURCE
   "${AllResources}"
   )
 
-target_link_libraries (${target} calchart_core)
+target_link_libraries (CalChart calchart_core ${Boost_LIBRARIES})
+target_link_libraries (CalChart nlohmann_json::nlohmann_json)
+
+#target_link_libraries (
+#  CalChart
+#  PRIVATE
+#  calchart_core
+#  ${Boost_LIBRARIES}
+#  nlohmann_json::nlohmann_json
+#  )
+
 
 # We include wxWidgets as a submodule (see https://docs.wxwidgets.org/trunk/overview_cmake.html for info)
 # Have wxWidgets build as static libraries
 set (wxBUILD_SHARED OFF)
+set (wxUSE_STL ON)
+set (wxUSE_STD_CONTAINERS ON)
 add_subdirectory (submodules/wxWidgets)
 
 target_link_libraries (
-  ${target} gl core base adv html net
+  CalChart wx::gl wx::core wx::base wx::adv wx::html wx::net wx::aui
   )
 
-set_target_properties (${target} PROPERTIES CXX_STANDARD 14)
+set_target_properties (CalChart PROPERTIES CXX_STANDARD 17)
 
 target_include_directories (
-  ${target}
+  CalChart
   PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core"
   "${CMAKE_CURRENT_SOURCE_DIR}/src"
@@ -205,8 +347,8 @@ target_include_directories (
 if (APPLE)
 
 set_target_properties (
-  ${target} PROPERTIES
-  MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/build-macos/${target}-Info.plist.in"
+  CalChart PROPERTIES
+  MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/build-macos/CalChart-Info.plist.in"
   MACOSX_BUNDLE_ICON_FILE calchart.icns
   MACOSX_BUNDLE TRUE
   MACOSX_FRAMEWORK_IDENTIFIER com.calband.CalChart
@@ -227,31 +369,33 @@ set_property (DIRECTORY PROPERTY VS_STARTUP_PROJECT "CalChart")
 set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
 
 add_custom_command (
-  TARGET ${target} POST_BUILD
+  TARGET CalChart POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory
-  "${CMAKE_CURRENT_SOURCE_DIR}/resources/" $<TARGET_FILE_DIR:${target}>
+  "${CMAKE_CURRENT_SOURCE_DIR}/resources" $<TARGET_FILE_DIR:CalChart>/resources
   )
 
 add_custom_command (
-  TARGET ${target} POST_BUILD
+  TARGET CalChart POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory
-  "${CMAKE_CURRENT_SOURCE_DIR}/docs" $<TARGET_FILE_DIR:${target}>/docs
+  "${CMAKE_CURRENT_SOURCE_DIR}/docs" $<TARGET_FILE_DIR:CalChart>/docs
   )
+
+target_sources(CalChart PRIVATE build-windows/WindowsHiDPI.manifest)
 
 endif ()
 
 # we add some targets for docs and images so we can pack them for windows
 # see http://yanivresearch.info/software/CPackWindowsTutorial/CPackForWindows.html
 install (
-  FILES ${${target}Docs}
+  FILES ${CalChartDocs}
   DESTINATION docs
   COMPONENT Docs
   )
 
 install (
-  FILES ${${target}Images}
-  DESTINATION image
-  COMPONENT Images
+  FILES ${CalChartResources}
+  DESTINATION resources
+  COMPONENT Resources
   )
 
 # Installer section
@@ -263,7 +407,7 @@ include (InstallRequiredSystemLibraries)
 set (CPACK_PACKAGE_NAME CalChart)
 set (CPACK_ARCHIVE_COMPONENT_INSTALL ON)
 if (MSVC)
-  set (CPACK_COMPONENTS_ALL applications Docs Images)
+  set (CPACK_COMPONENTS_ALL applications Docs Resources)
 else ()
   set (CPACK_COMPONENTS_ALL applications)
 endif ()
@@ -278,4 +422,9 @@ set (CPACK_PACKAGE_VERSION "${CalChart_VERSION}")
 set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}")
 
 include (CPack)
+
+# tests for calchart_core
+include(CTest)
+add_test (TutorialRuns calchart_cmd --version)
+
 

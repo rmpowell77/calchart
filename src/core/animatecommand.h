@@ -22,7 +22,7 @@
 */
 
 #include "animate.h"
-#include "json.h"
+#include <nlohmann/json.hpp>
 
 namespace CalChart {
 
@@ -33,15 +33,17 @@ public:
     AnimateCommand(unsigned beats);
     virtual ~AnimateCommand() = default;
 
+    virtual std::unique_ptr<AnimateCommand> clone() const = 0;
+
     // returns false if end of command
-    virtual bool Begin(AnimatePoint& pt);
-    virtual bool End(AnimatePoint& pt);
-    virtual bool NextBeat(AnimatePoint& pt);
-    virtual bool PrevBeat(AnimatePoint& pt);
+    virtual bool Begin(Coord& pt);
+    virtual bool End(Coord& pt);
+    virtual bool NextBeat(Coord& pt);
+    virtual bool PrevBeat(Coord& pt);
 
     // go through all beats at once
-    virtual void ApplyForward(AnimatePoint& pt);
-    virtual void ApplyBackward(AnimatePoint& pt);
+    virtual void ApplyForward(Coord& pt);
+    virtual void ApplyBackward(Coord& pt);
 
     virtual AnimateDir Direction() const = 0;
     virtual float RealDirection() const = 0;
@@ -54,22 +56,13 @@ public:
     virtual MarchingStyle StepStyle() { return STYLE_HighStep; }
 
     // when we want to have the path drawn:
-    virtual DrawCommand GenCC_DrawCommand(const AnimatePoint& pt, const Coord& offset) const;
+    virtual DrawCommand GenCC_DrawCommand(const Coord& pt, const Coord& offset) const;
 
     /*!
-     * @brief Manipulates dest so that it contains a JSONElement that
-     * could represent this movement in an Online Viewer '.viewer' file.
+     * @brief json  that represent this movement in an Online Viewer '.viewer' file.
      * @param start The position at which this movement begins.
      */
-    JSONElement toOnlineViewerJSON(const Coord& start) const;
-    /*!
-     * @brief Manipulates dest so that it contains a JSONElement that
-     * could represent this movement in an Online Viewer '.viewer' file.
-     * @param dest A reference to the JSONElement which will be transformed
-     * into a JSON representation of this movement.
-     * @param start The position at which this movement begins.
-     */
-    virtual void toOnlineViewerJSON(JSONElement& dest, const Coord& start) const = 0;
+    virtual nlohmann::json toOnlineViewerJSON(const Coord& start) const = 0;
 
 protected:
     unsigned mNumBeats;
@@ -81,10 +74,12 @@ public:
     AnimateCommandMT(unsigned beats, float direction);
     virtual ~AnimateCommandMT() = default;
 
-    virtual AnimateDir Direction() const;
-    virtual float RealDirection() const;
+    std::unique_ptr<AnimateCommand> clone() const override;
 
-    void toOnlineViewerJSON(JSONElement& dest, const Coord& start) const;
+    AnimateDir Direction() const override;
+    float RealDirection() const override;
+
+    nlohmann::json toOnlineViewerJSON(const Coord& start) const override;
 
 protected:
     AnimateDir dir;
@@ -97,18 +92,20 @@ public:
     AnimateCommandMove(unsigned beats, Coord movement, float direction);
     virtual ~AnimateCommandMove() = default;
 
-    virtual bool NextBeat(AnimatePoint& pt);
-    virtual bool PrevBeat(AnimatePoint& pt);
+    std::unique_ptr<AnimateCommand> clone() const override;
 
-    virtual void ApplyForward(AnimatePoint& pt);
-    virtual void ApplyBackward(AnimatePoint& pt);
+    bool NextBeat(Coord& pt) override;
+    bool PrevBeat(Coord& pt) override;
 
-    virtual float MotionDirection() const;
-    virtual void ClipBeats(unsigned beats);
+    void ApplyForward(Coord& pt) override;
+    void ApplyBackward(Coord& pt) override;
 
-    virtual DrawCommand GenCC_DrawCommand(const AnimatePoint& pt, const Coord& offset) const;
+    float MotionDirection() const override;
+    void ClipBeats(unsigned beats) override;
 
-    void toOnlineViewerJSON(JSONElement& dest, const Coord& start) const;
+    DrawCommand GenCC_DrawCommand(const Coord& pt, const Coord& offset) const override;
+
+    nlohmann::json toOnlineViewerJSON(const Coord& start) const override;
 
 private:
     Coord mVector;
@@ -120,19 +117,21 @@ public:
         float ang2, bool backwards = false);
     virtual ~AnimateCommandRotate() = default;
 
-    virtual bool NextBeat(AnimatePoint& pt);
-    virtual bool PrevBeat(AnimatePoint& pt);
+    std::unique_ptr<AnimateCommand> clone() const override;
 
-    virtual void ApplyForward(AnimatePoint& pt);
-    virtual void ApplyBackward(AnimatePoint& pt);
+    bool NextBeat(Coord& pt) override;
+    bool PrevBeat(Coord& pt) override;
 
-    virtual AnimateDir Direction() const;
-    virtual float RealDirection() const;
-    virtual void ClipBeats(unsigned beats);
+    void ApplyForward(Coord& pt) override;
+    void ApplyBackward(Coord& pt) override;
 
-    virtual DrawCommand GenCC_DrawCommand(const AnimatePoint& pt, const Coord& offset) const;
+    AnimateDir Direction() const override;
+    float RealDirection() const override;
+    void ClipBeats(unsigned beats) override;
 
-    void toOnlineViewerJSON(JSONElement& dest, const Coord& start) const;
+    DrawCommand GenCC_DrawCommand(const Coord& pt, const Coord& offset) const override;
+
+    nlohmann::json toOnlineViewerJSON(const Coord& start) const override;
 
 private:
     Coord mOrigin;
